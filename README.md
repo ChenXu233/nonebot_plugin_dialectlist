@@ -16,7 +16,7 @@ v1.0 可以选择看每天的话痨排行榜啦！
 
 >**通过nb**安装
 
-`nb plugin install nonebot_plugin_emojimix`
+`nb plugin install nonebot-plugin-dialectlist`
 
 ## 配置
 
