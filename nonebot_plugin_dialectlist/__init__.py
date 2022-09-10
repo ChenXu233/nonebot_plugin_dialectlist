@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Dict, List, Tuple, Union
+from typing import List, Tuple, Union
 from datetime import datetime, timedelta
 
 try:
@@ -14,92 +14,16 @@ from nonebot.params import Command, CommandArg, Arg, Depends
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
 from nonebot.adapters import Bot
-from nonebot.adapters.onebot.v11 import GroupMessageEvent,Message
-from nonebot.adapters.onebot.v11.exception import ActionFailed
-
-
+from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent, Message
 
 require("nonebot_plugin_datastore")
 require("nonebot_plugin_chatrecorder")
-from .record4dialectlist import get_message_records
+require("nonebot_plugin_guild_patch")
+from nonebot_plugin_guild_patch import GuildMessageEvent
+
+from .qqDBRecorder import get_message_records,msg_counter
 from .config import plugin_config
-
-async def msg_got_counter(
-    gid:int,
-    bot:Bot,
-    start_time=None,
-    stop_time=None,
-    got_num:int=10
-)->Message:
-    '''
-        计算出结果并返回可以直接发送的字符串
-    '''
-    st = time.time()
-    gids:List[str] = [str(gid)]
-    bot_id = await bot.call_api('get_login_info')
-    bot_id = [str(bot_id['user_id'])]
-    
-    logger.debug('loading msg form group {}'.format(gid))
-    
-    gnl = await bot.call_api('get_group_member_list',group_id=int(gid))
-
-    logger.debug('group {} have number {}'.format(gid,len(gnl)))
-
-    msg = await get_message_records(
-        group_ids=gids,
-        exclude_user_ids=bot_id,
-        message_type='group',
-        time_start=start_time,
-        time_stop=stop_time
-    )
-
-    lst:Dict[str,int] = {}
-    for i in msg:
-        try:
-            lst[i.user_id] +=1
-        except KeyError:
-            lst[i.user_id] =1
-
-    logger.debug(lst)
-    logger.debug('group number num is '+str(len(lst)))
-
-    ranking = []
-    while len(ranking) < got_num:
-        try:
-            maxkey = max(lst, key=lst.get)  # type: ignore
-        except ValueError:
-            ranking.append(None)
-            continue
-
-        logger.debug('searching number {} form group {}'.format(str(maxkey),str(gid)))
-        try:
-            
-            t = await bot.call_api(
-                "get_group_member_info",
-                group_id=int(gid),
-                user_id=int(maxkey),
-                no_cache=True
-            )
-            
-            nickname:str = t['nickname']if not t['card'] else t['card']
-            ranking.append([nickname.strip(),lst.pop(maxkey)])
-            
-        except ActionFailed as e:
-            
-            logger.warning(e)
-            logger.warning('number {} not exit in group {}'.format(str(maxkey),str(gid)))
-            lst.pop(maxkey)
-
-    logger.debug('loaded list:\n{}'.format(ranking))
-    
-    
-    out:str = ''
-    for i in range(got_num):
-        str_example = '第{}名：\n{}条消息\n'.format(i+1,str(ranking[i])[1:-1])
-        out = out + str_example
-    out = out + '\n\n你们的职业是水群吗？————MYX\n计算花费时间:{}秒'.format(time.time()-st)
-    
-    return Message(out)
+from .qqGuildJsonRecorder import get_guild_message_records
 
 
 def parse_datetime(key: str):
@@ -157,7 +81,16 @@ rankings = on_command(
 )
 
 @rankings.handle()
-async def _a(event:GroupMessageEvent,state: T_State,commands: Tuple[str, ...] = Command(),args: Message = CommandArg()):
+async def _group_message(
+    event:Union[GroupMessageEvent, GuildMessageEvent],
+    state: T_State,commands: Tuple[str, ...] = Command(),
+    args: Message = CommandArg()
+    ):
+    
+    if isinstance(event, GroupMessageEvent):
+        logger.debug('handle command from qq')
+    elif isinstance(event, GuildMessageEvent):
+        logger.debug('handle command from qqguild')
     
     dt = get_datetime_now_with_timezone()
     command = commands[0]
@@ -204,6 +137,15 @@ async def _a(event:GroupMessageEvent,state: T_State,commands: Tuple[str, ...] = 
                 await rankings.finish("请输入正确的日期，不然我没法理解呢！")
     else:
         pass
+    
+@rankings.handle()
+async def _private_message(
+    event:PrivateMessageEvent,
+    state: T_State,commands: Tuple[str, ...] = Command(),
+    args: Message = CommandArg()
+    ):
+    # TODO:支持私聊的查询
+    await rankings.finish('暂不支持私聊查询，今后可能会添加这一项功能')
 
 @rankings.got(
     "start",
@@ -217,19 +159,31 @@ async def _a(event:GroupMessageEvent,state: T_State,commands: Tuple[str, ...] = 
 )
 async def handle_message(
     bot: Bot,
-    event: GroupMessageEvent,
-    start: datetime = Arg(),
-    stop: datetime = Arg()
+    event: Union[GroupMessageEvent, GuildMessageEvent],
+    stop: datetime = Arg(),
+    start: datetime = Arg()
 ):
-
-    # 将时间转换到 UTC 时区
-    msg = await msg_got_counter(
-        gid=event.group_id,
-        bot=bot,
-        start_time=start.astimezone(ZoneInfo("UTC")),
-        stop_time=stop.astimezone(ZoneInfo("UTC"))
+    
+    st = time.time()
+    bot_id = await bot.call_api('get_login_info')
+    bot_id = [str(bot_id['user_id'])]
+    if isinstance(event,GroupMessageEvent):
+        
+        gids:List[str] = [str(event.group_id)]
+        msg = await get_message_records(
+            group_ids=gids,
+            exclude_user_ids=bot_id,
+            message_type='group',
+            time_start=start.astimezone(ZoneInfo("UTC")),
+            time_stop=stop.astimezone(ZoneInfo("UTC"))
         )
+        msg = await msg_counter(gid=event.group_id, bot=bot, msg=msg,got_num=plugin_config.dialectlist_get_num)
+        
+    elif isinstance(event, GuildMessageEvent):
+        
+        guild_id = event.guild_id
+        msg = await get_guild_message_records(guild_id=str(guild_id),bot=bot)
+        
+    msg += plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st)
     await rankings.finish(msg)
-
-
-
+    
