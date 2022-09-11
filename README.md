@@ -9,14 +9,24 @@
 # 话痨排行榜
 nonebot-plugin-dialectlist
 
-\>📄看看群友们这些天在群里水了多少话📄<
+\>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
 ## 版本
+  
+### V1.0
+  
+  - 看看群里群友能有多话痨
+  
+### V1.1
+  
+  - 支持频道咯！(*^_^*)
+  
+### V1.2
+  
+  - 排行榜可视化
 
-v1.0 支持频道咯！(*^_^*)
-
-⚠ 适配nonebot2-2.0.0b5+
+### ⚠ 适配nonebot2-2.0.0b5+
 
 ## 安装
 
@@ -47,8 +57,9 @@ v1.0 支持频道咯！(*^_^*)
 dialectlist_string_format: str = '第{index}名：\n{nickname},{chatdatanum}条消息\n' #格式
 dialectlist_string_suffix_format: str = '\n你们的职业是水群吗？————MYX\n计算花费时间:{timecost}秒' #后缀字符
 dialectlist_get_num:int = 10 #排行榜长度
+dialectlist_visualization:bool = True #是否开启可视化
 ```
-也可以完全不配置，将会按照默认配置走
+💭也可以不进行配置，这将会使插件按照默认配置运行
 
 
 ## 命令
@@ -82,9 +93,7 @@ dialectlist_get_num:int = 10 #排行榜长度
 
 1. 私聊的查询 ~~（让我先咕一会）~~
   
-2. 可视化排行榜
-  
-3. 优化代码结构（？）（看起来非常乱了）
+2. 优化代码结构（？）（看起来非常乱了）
 
 ## 已知BUG
 
