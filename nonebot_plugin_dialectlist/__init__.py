@@ -1,5 +1,6 @@
 import re
 import time
+import asyncio
 from typing import List, Tuple, Union
 from datetime import datetime, timedelta
 
@@ -184,6 +185,7 @@ async def handle_message(
         guild_id = event.guild_id
         msg = await get_guild_message_records(guild_id=str(guild_id),bot=bot)
         
-    msg += plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st)
-    await rankings.finish(msg)
+    await rankings.send(msg)
+    await asyncio.sleep(1) #让图片先发出来
+    await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st-1))
     
