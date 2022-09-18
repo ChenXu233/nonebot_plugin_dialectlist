@@ -17,15 +17,14 @@ from nonebot.matcher import Matcher
 from nonebot.adapters import Bot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent, Message
 
-require("nonebot_plugin_datastore")
+require("nonebot_plugin_chatrecorder_guild_patch")
+from nonebot_plugin_chatrecorder_guild_patch import get_guild_all_channel
 require("nonebot_plugin_chatrecorder")
 require("nonebot_plugin_guild_patch")
 from nonebot_plugin_guild_patch import GuildMessageEvent
 
-from .qqDBRecorder import get_message_records,msg_counter
+from .function import get_message_records,msg_counter, msg_list2msg
 from .config import plugin_config
-from .qqGuildJsonRecorder import get_guild_message_records
-
 
 def parse_datetime(key: str):
     """解析数字，并将结果存入 state 中"""
@@ -166,24 +165,37 @@ async def handle_message(
 ):
     
     st = time.time()
-    bot_id = await bot.call_api('get_login_info')
-    bot_id = [str(bot_id['user_id'])]
+    
     if isinstance(event,GroupMessageEvent):
-        
+        bot_id = await bot.call_api('get_login_info')
+        bot_id = [str(bot_id['user_id'])]
         gids:List[str] = [str(event.group_id)]
-        msg = await get_message_records(
+        msg_list = await get_message_records(
             group_ids=gids,
             exclude_user_ids=bot_id,
             message_type='group',
             time_start=start.astimezone(ZoneInfo("UTC")),
             time_stop=stop.astimezone(ZoneInfo("UTC"))
         )
-        msg = await msg_counter(gid=event.group_id, bot=bot, msg=msg,got_num=plugin_config.dialectlist_get_num)
         
     elif isinstance(event, GuildMessageEvent):
+        bot_id = await bot.call_api('get_guild_service_profile')
+        bot_id = [str(bot_id['tiny_id'])]
+        guild_ids:List[str] = await get_guild_all_channel(event.guild_id,bot=bot)
+        msg_list = await get_message_records(
+            group_ids=guild_ids,
+            exclude_user_ids=bot_id,
+            message_type='group',
+            time_start=start.astimezone(ZoneInfo("UTC")),
+            time_stop=stop.astimezone(ZoneInfo("UTC"))
+        )
+
         
-        guild_id = event.guild_id
-        msg = await get_guild_message_records(guild_id=str(guild_id),bot=bot)
+    msg_dict = await msg_counter(msg_list=msg_list)
+    if isinstance(event,GroupMessageEvent):
+        msg = await msg_list2msg(msg_list=msg_dict,gid=event.group_id,platform='qq',bot=bot,got_num=plugin_config.dialectlist_get_num)
+    elif isinstance(event, GuildMessageEvent):
+        msg = await msg_list2msg(msg_list=msg_dict,gid=event.guild_id,platform='guild',bot=bot,got_num=plugin_config.dialectlist_get_num)
         
     await rankings.send(msg)
     await asyncio.sleep(1) #让图片先发出来
