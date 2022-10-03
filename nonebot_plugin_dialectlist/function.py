@@ -1,4 +1,3 @@
-import time
 import pygal
 import unicodedata
 
@@ -7,7 +6,6 @@ from sqlmodel import select, or_
 from typing_extensions import Literal
 from typing import Iterable, List, Optional, Dict
 from pygal.style import Style
-style=Style(font_family="SimHei",)
 
 from nonebot.log import logger
 from nonebot.adapters import Bot
@@ -18,7 +16,7 @@ from nonebot_plugin_datastore import create_session
 from nonebot_plugin_chatrecorder.model import MessageRecord
 
 from .config import plugin_config
-
+style=Style(font_family=plugin_config.dialectlist_font)
 
 
 def remove_control_characters(string:str) -> str:
@@ -185,7 +183,7 @@ async def msg_list2msg(
     for i in range(got_num):
         index = i+1
         nickname,chatdatanum = ranking[i]
-        str_example = plugin_config.dialectlist_string_format.format(index=index,nickname=nickname,chatdatanum=chatdatanum)
+        str_example = plugin_config.dialectlist_string_format.format(index=index,nickname=nickname,chatDataNum=chatdatanum)
         out = out + str_example
         
     logger.debug(out)

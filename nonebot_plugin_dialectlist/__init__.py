@@ -167,24 +167,26 @@ async def handle_message(
     st = time.time()
     
     if isinstance(event,GroupMessageEvent):
-        bot_id = await bot.call_api('get_login_info')
-        bot_id = [str(bot_id['user_id'])]
+        if plugin_config.dialectlist_excluded_self:
+            bot_id:str = await bot.call_api('get_login_info')
+            plugin_config.dialectlist_excluded_people.append(bot_id)
         gids:List[str] = [str(event.group_id)]
         msg_list = await get_message_records(
             group_ids=gids,
-            exclude_user_ids=bot_id,
+            exclude_user_ids=plugin_config.dialectlist_excluded_people,
             message_type='group',
             time_start=start.astimezone(ZoneInfo("UTC")),
             time_stop=stop.astimezone(ZoneInfo("UTC"))
         )
         
     elif isinstance(event, GuildMessageEvent):
-        bot_id = await bot.call_api('get_guild_service_profile')
-        bot_id = [str(bot_id['tiny_id'])]
+        if plugin_config.dialectlist_excluded_self:
+            bot_id = await bot.call_api('get_guild_service_profile')
+            plugin_config.dialectlist_excluded_people.append(bot_id)
         guild_ids:List[str] = await get_guild_all_channel(event.guild_id,bot=bot)
         msg_list = await get_message_records(
             group_ids=guild_ids,
-            exclude_user_ids=bot_id,
+            exclude_user_ids=plugin_config.dialectlist_excluded_people,
             message_type='group',
             time_start=start.astimezone(ZoneInfo("UTC")),
             time_stop=stop.astimezone(ZoneInfo("UTC"))
@@ -199,5 +201,5 @@ async def handle_message(
         
     await rankings.send(msg)
     await asyncio.sleep(1) #让图片先发出来
-    await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st-1))
+    await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timeCost=time.time()-st-1))
     
