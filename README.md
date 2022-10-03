@@ -27,6 +27,7 @@ nonebot-plugin-dialectlist
   - 排行榜可视化
   
 ### V1.3
+
   - 添加了一些可配置项
 
 ### ⚠ 适配nonebot2-2.0.0b5+
