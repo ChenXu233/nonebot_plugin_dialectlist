@@ -46,11 +46,9 @@ nonebot-plugin-dialectlist
 
 ### 插件依赖于
 
-1. [nonebot-plugin-chatrecorder](https://github.com/noneplugin/nonebot-plugin-chatrecorder) ————获取历史的消息
+1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————储存历史的消息
 
-2. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————储存历史的消息
-
-3. [nonebot-plugin-guild-patch](https://github.com/mnixry/nonebot-plugin-guild-patch) —————适配频道消息
+2. [nonebot-plugin-guild-patch](https://github.com/mnixry/nonebot-plugin-guild-patch) —————适配频道消息
   
 ## 配置
 
@@ -69,6 +67,8 @@ nonebot-plugin-dialectlist
 ```
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
+ ### ⚠ 注意！！
+  在windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
 
 ## 命令
 
