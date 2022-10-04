@@ -168,8 +168,8 @@ async def handle_message(
     
     if isinstance(event,GroupMessageEvent):
         if plugin_config.dialectlist_excluded_self:
-            bot_id:str = await bot.call_api('get_login_info')
-            plugin_config.dialectlist_excluded_people.append(bot_id)
+            bot_id = await bot.call_api('get_login_info')
+            plugin_config.dialectlist_excluded_people.append(str(bot_id["user_id"]))
         gids:List[str] = [str(event.group_id)]
         msg_list = await get_message_records(
             group_ids=gids,
@@ -182,7 +182,7 @@ async def handle_message(
     elif isinstance(event, GuildMessageEvent):
         if plugin_config.dialectlist_excluded_self:
             bot_id = await bot.call_api('get_guild_service_profile')
-            plugin_config.dialectlist_excluded_people.append(bot_id)
+            plugin_config.dialectlist_excluded_people.append(str(bot_id["user_id"]))
         guild_ids:List[str] = await get_guild_all_channel(event.guild_id,bot=bot)
         msg_list = await get_message_records(
             group_ids=guild_ids,
