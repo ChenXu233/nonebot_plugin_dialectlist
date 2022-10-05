@@ -201,5 +201,6 @@ async def handle_message(
         
     await rankings.send(msg)
     await asyncio.sleep(1) #让图片先发出来
-    await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timeCost=time.time()-st-1))
+    if plugin_config.dialectlist_string_suffix_format:
+        await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st-1))
     

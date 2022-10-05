@@ -183,7 +183,7 @@ async def msg_list2msg(
     for i in range(got_num):
         index = i+1
         nickname,chatdatanum = ranking[i]
-        str_example = plugin_config.dialectlist_string_format.format(index=index,nickname=nickname,chatDataNum=chatdatanum)
+        str_example = plugin_config.dialectlist_string_format.format(index=index,nickname=nickname,chatdatanum=chatdatanum)
         out = out + str_example
         
     logger.debug(out)
