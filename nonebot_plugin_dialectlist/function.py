@@ -10,7 +10,7 @@ from pygal.style import Style
 from nonebot.log import logger
 from nonebot.adapters import Bot
 from nonebot.adapters.onebot.v11 import Message,MessageSegment
-from nonebot.adapters.onebot.v11.exception import ActionFailed
+from nonebot.exception import ActionFailed
 
 from nonebot_plugin_datastore import create_session
 from nonebot_plugin_chatrecorder.model import MessageRecord

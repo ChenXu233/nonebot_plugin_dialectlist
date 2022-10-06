@@ -1,2 +1,12 @@
 /setup.py
 .vscode/settings.json
+build/lib/nonebot_plugin_dialectlist/__init__.py
+build/lib/nonebot_plugin_dialectlist/config.py
+build/lib/nonebot_plugin_dialectlist/function.py
+dist/nonebot-plugin-dialectlist-1.3.2.tar.gz
+nonebot_plugin_dialectlist.egg-info/dependency_links.txt
+nonebot_plugin_dialectlist.egg-info/PKG-INFO
+nonebot_plugin_dialectlist.egg-info/requires.txt
+nonebot_plugin_dialectlist.egg-info/SOURCES.txt
+nonebot_plugin_dialectlist.egg-info/top_level.txt
+.gitignore
