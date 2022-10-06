@@ -68,6 +68,9 @@ nonebot-plugin-dialectlist
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
  ### ⚠ 注意！！
+ 
+  需要提前安装好[GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)
+  
   在windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
 
 ## 命令
