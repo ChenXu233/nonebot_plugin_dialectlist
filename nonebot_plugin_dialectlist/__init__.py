@@ -72,6 +72,7 @@ rankings = on_command(
             "今日群话痨排行榜",
             "昨日群话痨排行榜",
             "本周群话痨排行榜",
+            "上周群话痨排行榜",
             "本月群话痨排行榜",
             "年度群话痨排行榜",
             "历史群话痨排行榜",
@@ -112,6 +113,13 @@ async def _group_message(
             hour=0, minute=0, second=0, microsecond=0
         ) - timedelta(days=dt.weekday())
         state["stop"] = dt
+    elif command == "上周群话痨排行榜":
+        state["start"] = dt.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=dt.weekday() + 7)
+        state["stop"] = dt.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=dt.weekday())
     elif command == "本月群话痨排行榜":
         state["start"] = dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         state["stop"] = dt

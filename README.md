@@ -12,6 +12,8 @@ nonebot-plugin-dialectlist
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
+# 注意,目前的版本还不能和更新后的chatrecorder使用,正在火速修补bug中💥
+  
 ## 版本
   
 ### V1.0
@@ -68,6 +70,9 @@ nonebot-plugin-dialectlist
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
  ### ⚠ 注意！！
+ 
+  需要提前安装好[GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)
+  
   在windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
 
 ## 命令
@@ -79,6 +84,8 @@ nonebot-plugin-dialectlist
 -`/昨日群话痨排行榜` ————看看昨天的群友发了多少消息！
 
 -`/本周群话痨排行榜` ————看看本周的群友发了多少消息！
+  
+-`/上周群话痨排行榜` ————看看上周的群友发了多少消息！
 
 -`/本月群话痨排行榜` ————看看这个月的群友发了多少消息！
 
