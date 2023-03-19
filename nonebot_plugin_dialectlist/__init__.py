@@ -14,16 +14,15 @@ from nonebot.log import logger
 from nonebot.params import Command, CommandArg, Arg, Depends
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
-from nonebot.adapters import Bot
+from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent, Message
 
-require("nonebot_plugin_chatrecorder_guild_patch")
-from nonebot_plugin_chatrecorder_guild_patch import get_guild_all_channel
 require("nonebot_plugin_chatrecorder")
+from nonebot_plugin_chatrecorder.record import get_message_records
 require("nonebot_plugin_guild_patch")
 from nonebot_plugin_guild_patch import GuildMessageEvent
 
-from .function import get_message_records,msg_counter, msg_list2msg
+from .function import msg_counter, msg_list2msg
 from .config import plugin_config
 
 def parse_datetime(key: str):
@@ -172,9 +171,10 @@ async def handle_message(
             plugin_config.dialectlist_excluded_people.append(bot_id)
         gids:List[str] = [str(event.group_id)]
         msg_list = await get_message_records(
+            bot_ids=bot.self_id,
+            platforms='qq',
             group_ids=gids,
             exclude_user_ids=plugin_config.dialectlist_excluded_people,
-            message_type='group',
             time_start=start.astimezone(ZoneInfo("UTC")),
             time_stop=stop.astimezone(ZoneInfo("UTC"))
         )
@@ -182,12 +182,12 @@ async def handle_message(
     elif isinstance(event, GuildMessageEvent):
         if plugin_config.dialectlist_excluded_self:
             bot_id = await bot.call_api('get_guild_service_profile')
-            plugin_config.dialectlist_excluded_people.append(bot_id)
-        guild_ids:List[str] = await get_guild_all_channel(event.guild_id,bot=bot)
+        guild_ids:List[str] = [str(event.guild_id)]
         msg_list = await get_message_records(
-            group_ids=guild_ids,
+            bot_ids=bot.self_id,
+            platforms='qqguild',
+            guild_ids=guild_ids,
             exclude_user_ids=plugin_config.dialectlist_excluded_people,
-            message_type='group',
             time_start=start.astimezone(ZoneInfo("UTC")),
             time_stop=stop.astimezone(ZoneInfo("UTC"))
         )
@@ -201,5 +201,6 @@ async def handle_message(
         
     await rankings.send(msg)
     await asyncio.sleep(1) #让图片先发出来
-    await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timeCost=time.time()-st-1))
+    if plugin_config.dialectlist_string_suffix_format:
+        await rankings.finish(plugin_config.dialectlist_string_suffix_format.format(timecost=time.time()-st-1))
     
