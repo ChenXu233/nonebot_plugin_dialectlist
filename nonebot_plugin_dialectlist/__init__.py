@@ -1,7 +1,7 @@
 import re
 import time
 import asyncio
-from typing import List, Tuple, Union
+from typing import Tuple, Union
 from datetime import datetime, timedelta
 
 try:
@@ -17,13 +17,13 @@ from nonebot.matcher import Matcher
 from nonebot.adapters import Bot
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, PrivateMessageEvent, Message
 
-require("nonebot_plugin_chatrecorder_guild_patch")
-from nonebot_plugin_chatrecorder_guild_patch import get_guild_all_channel
+
 require("nonebot_plugin_chatrecorder")
+from nonebot_plugin_chatrecorder import get_message_records
 require("nonebot_plugin_guild_patch")
 from nonebot_plugin_guild_patch import GuildMessageEvent
 
-from .function import get_message_records,msg_counter, msg_list2msg
+from .function import msg_counter, msg_list2msg
 from .config import plugin_config
 
 def parse_datetime(key: str):
@@ -104,6 +104,9 @@ async def _group_message(
     elif command == "昨日群话痨排行榜":
         state["stop"] = dt.replace(hour=0, minute=0, second=0, microsecond=0)
         state["start"] = state["stop"] - timedelta(days=1)
+    elif command == "前日群话痨排行榜":
+        state["stop"] = dt.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        state["start"] = state["stop"] - timedelta(days=1)
     elif command == "本周群话痨排行榜":
         state["start"] = dt.replace(
             hour=0, minute=0, second=0, microsecond=0
@@ -159,45 +162,46 @@ async def _private_message(
 )
 async def handle_message(
     bot: Bot,
-    event: Union[GroupMessageEvent, GuildMessageEvent],
+    event: GroupMessageEvent, #Union[GroupMessageEvent,GuildMessageEvent],
     stop: datetime = Arg(),
     start: datetime = Arg()
 ):
     
     st = time.time()
     
-    if isinstance(event,GroupMessageEvent):
-        if plugin_config.dialectlist_excluded_self:
-            bot_id = await bot.call_api('get_login_info')
-            plugin_config.dialectlist_excluded_people.append(str(bot_id["user_id"]))
-        gids:List[str] = [str(event.group_id)]
-        msg_list = await get_message_records(
-            group_ids=gids,
-            exclude_user_ids=plugin_config.dialectlist_excluded_people,
-            message_type='group',
-            time_start=start.astimezone(ZoneInfo("UTC")),
-            time_stop=stop.astimezone(ZoneInfo("UTC"))
-        )
+    #if isinstance(event,GroupMessageEvent):
+    if plugin_config.dialectlist_excluded_self:
+        bot_id:dict = await bot.call_api('get_login_info')
+        plugin_config.dialectlist_excluded_people.append(bot_id['user_id'])
+    print(event.self_id)
+    msg_list = await get_message_records(
+        bot_ids=[str(bot.self_id)],
+        platforms=[str('qq')],
+        group_ids=[str(event.group_id)],
+        exclude_user_ids=plugin_config.dialectlist_excluded_people,
+        time_start=start.astimezone(ZoneInfo("UTC")),
+        time_stop=stop.astimezone(ZoneInfo("UTC"))
+    )
         
-    elif isinstance(event, GuildMessageEvent):
-        if plugin_config.dialectlist_excluded_self:
-            bot_id = await bot.call_api('get_guild_service_profile')
-            plugin_config.dialectlist_excluded_people.append(str(bot_id["user_id"]))
-        guild_ids:List[str] = await get_guild_all_channel(event.guild_id,bot=bot)
-        msg_list = await get_message_records(
-            group_ids=guild_ids,
-            exclude_user_ids=plugin_config.dialectlist_excluded_people,
-            message_type='group',
-            time_start=start.astimezone(ZoneInfo("UTC")),
-            time_stop=stop.astimezone(ZoneInfo("UTC"))
-        )
+    # elif isinstance(event, GuildMessageEvent):
+    #     if plugin_config.dialectlist_excluded_self:
+    #         bot_id = await bot.call_api('get_guild_service_profile')
+    #     guild_ids:List[str] = [str(event.guild_id)]
+    #     msg_list = await get_message_records(
+    #         bot_ids=[str(bot.self_id)],
+    #         platforms=['qqguild'],
+    #         guild_ids=guild_ids,
+    #         exclude_user_ids=plugin_config.dialectlist_excluded_people,
+    #         time_start=start.astimezone(ZoneInfo("UTC")),
+    #         time_stop=stop.astimezone(ZoneInfo("UTC"))
+    #     )
 
         
     msg_dict = await msg_counter(msg_list=msg_list)
-    if isinstance(event,GroupMessageEvent):
-        msg = await msg_list2msg(msg_list=msg_dict,gid=event.group_id,platform='qq',bot=bot,got_num=plugin_config.dialectlist_get_num)
-    elif isinstance(event, GuildMessageEvent):
-        msg = await msg_list2msg(msg_list=msg_dict,gid=event.guild_id,platform='guild',bot=bot,got_num=plugin_config.dialectlist_get_num)
+    # if isinstance(event,GroupMessageEvent):
+    msg = await msg_list2msg(msg_list=msg_dict,gid=event.group_id,platform='qq',bot=bot,got_num=plugin_config.dialectlist_get_num)
+    # elif isinstance(event, GuildMessageEvent):
+    #     msg = await msg_list2msg(msg_list=msg_dict,gid=event.guild_id,platform='guild',bot=bot,got_num=plugin_config.dialectlist_get_num)
         
     await rankings.send(msg)
     await asyncio.sleep(1) #让图片先发出来
