@@ -12,6 +12,8 @@ nonebot-plugin-dialectlist
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
+# 注意,目前的版本还不能和更新后的chatrecorder使用,正在火速修补bug中💥
+  
 ## 版本
   
 ### V1.0
