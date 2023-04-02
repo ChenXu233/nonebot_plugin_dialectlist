@@ -15,7 +15,7 @@ nonebot-plugin-dialectlist
 
 ## 安装
 
-1. 通过`pip`或`nb`安装；
+通过`pip`或`nb`安装；
 
 >**通过pip**安装
 
@@ -28,8 +28,6 @@ nonebot-plugin-dialectlist
 ### 插件依赖于
 
 1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————储存历史的消息
-
-2. [nonebot-plugin-guild-patch](https://github.com/mnixry/nonebot-plugin-guild-patch) —————适配频道消息
   
 ## 配置
 
@@ -50,9 +48,9 @@ nonebot-plugin-dialectlist
 
  ### ⚠ 注意！！
  
-  需要提前安装好[GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)
+  需要提前安装好[GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)(仅Windows环境下需要安装GTK+)
   
-  在windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
+  在Windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
 
 ## 命令
 
@@ -110,18 +108,15 @@ nonebot-plugin-dialectlist
   
 ## TODO
 
-1. 私聊的查询 ~~（让我先咕一会）~~
+- [ ] 私聊的查询(超级用户可以任意查询群聊的信息)
 
-2. 频道重新支持
+- [ ] 适配onebotV12
 
-3. 查询机器人自己的消息量
+- [ ] 关键词查询
 
-4. 待补充......
-
-## 已知BUG
+- [ ] 尝试利用jinja2模板引擎制作可视化图片(((真的可以吗?)))
   
-1. 字体可能要自己配置(bug?)
+ 待补充......
 
-# 题外话
-**学业问题可能只有周末才能看iusse和更新插件**
+## 题外话
 ~~整个项目快被我写成屎山了~~
