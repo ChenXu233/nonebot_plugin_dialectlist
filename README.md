@@ -35,14 +35,14 @@ nonebot-plugin-dialectlist
 
 在环境配置中，可以添加以下配置项
 ```python
-    dialectlist_string_format: str = '第{index}名：\n{nickname},{chatdatanum}条消息\n' #消息格式
-    dialectlist_string_suffix_format: str = '你们的职业是水群吗？————MYX\n计算花费时间:{timecost}秒' #消息后缀格式
-    dialectlist_get_num:int = 10 #获取人数数量
-    dialectlist_visualization:bool = True #是否可视化
-    dialectlist_visualization_type:Literal['饼图','圆环图','柱状图'] = '圆环图' #可视化方案
-    dialectlist_font:str = 'SimHei'#字体格式
-    dialectlist_excluded_people:List[str] = []#排除的人的QQ号(或频道号?(未经测试))
-    dialectlist_excluded_self:bool = True #是否排除机器人自己QQ
+dialectlist_string_format = '第{index}名：\n{nickname},{chatdatanum}条消息\n' #消息格式
+dialectlist_string_suffix_format = '你们的职业是水群吗？————MYX\n计算花费时间:{timecost}秒' #消息后缀格式
+dialectlist_get_num = 10 #获取人数数量
+dialectlist_visualization = True #是否可视化
+dialectlist_visualization_type = '圆环图' #可视化方案
+dialectlist_font = 'SimHei'#字体格式
+dialectlist_excluded_people = []#排除的人的QQ号(或频道号?(未经测试))
+dialectlist_excluded_self = True #是否排除机器人自己QQ
 ```
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
