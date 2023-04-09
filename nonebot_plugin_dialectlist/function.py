@@ -21,16 +21,6 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo  # type: ignore
 
-require("nonebot_plugin_htmlrender")
-from nonebot_plugin_htmlrender import (
-    md_to_pic,
-    html_to_pic,
-    text_to_pic,
-    capture_element,
-    template_to_pic,
-    template_to_html,
-)
-
 require("nonebot_plugin_chatrecorder")
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_chatrecorder.model import MessageRecord
@@ -129,6 +119,7 @@ def got_rank(msg_dict: Dict[str, int]) -> List[List[Union[str, int]]]:
         try:
             max_key = max(msg_dict.items(), key=lambda x: x[1])
             rank.append(list(max_key))
+            msg_dict.pop(max_key[0])
         except ValueError:
             rank.append(["null", 0])
             continue
@@ -167,7 +158,7 @@ class MsgProcesser(abc.ABC):
         pic_msg = None
         if plugin_config.dialectlist_visualization:
             try:
-                pic_msg = self.render_template_pic()
+                pic_msg = await self.render_template_pic()
             except OSError:
                 plugin_config.dialectlist_visualization = False
                 str_msg += "\n\n无法发送可视化图片，请检查是否安装GTK+，详细安装教程可见github\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer \n若不想安装这个软件，再次使用这个指令不会显示这个提示"
@@ -180,7 +171,7 @@ class MsgProcesser(abc.ABC):
         nicknames: List = await self.get_nickname_list()
         for i in range(len(rank)):
             index = i + 1
-            nickname, chatdatanum = nicknames[i], rank[i]
+            nickname, chatdatanum = nicknames[i], rank[i][1]
             str_example = plugin_config.dialectlist_string_format.format(
                 index=index, nickname=nickname, chatdatanum=chatdatanum
             )
@@ -188,7 +179,7 @@ class MsgProcesser(abc.ABC):
 
         return string
 
-    def render_template_pic(self) -> bytes:
+    async def render_template_pic(self) -> bytes:
         if plugin_config.dialectlist_visualization_type == "圆环图":
             view = pygal.Pie(inner_radius=0.6, style=style)
         elif plugin_config.dialectlist_visualization_type == "饼图":
@@ -197,7 +188,7 @@ class MsgProcesser(abc.ABC):
             view = pygal.Bar(style=style)
 
         view.title = "消息可视化"
-        for i, j in zip(self.rank, self.get_nickname_list()):  # type: ignore
+        for i, j in zip(self.rank, await self.get_nickname_list()):  # type: ignore
             view.add(str(j), int(i[1]))
 
         png: bytes = view.render_to_png()  # type: ignore
@@ -217,13 +208,15 @@ class V11GroupMsgProcesser(MsgProcesser):
                 member_info = await self.bot.get_group_member_info(
                     group_id=int(self.gid), user_id=int(self.rank[i][0]), no_cache=True
                 )
-                nicknames.append(
+                nickname=(
                     member_info["nickname"]
                     if not member_info["card"]
                     else member_info["card"]
                 )
-            except ActionFailed as e:
+                nicknames.append(remove_control_characters(nickname))
+            except (ActionFailed,ValueError) as e:
                 nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
+                
         return nicknames
 
     def get_head_portrait_urls(self) -> List:
@@ -237,7 +230,7 @@ class V11GroupMsgProcesser(MsgProcesser):
         msgs: List = await self.get_msg()
         msg = V11Message()
         msg += V11MessageSegment.text(msgs[0])  # type: ignore
-        msg += V12MessageSegment.image(msgs[1])  # type: ignore
+        msg += V11MessageSegment.image(msgs[1])  # type: ignore
         return msg
 
 
@@ -268,11 +261,12 @@ class V12GroupMsgProcesser(V12MsgProcesser):
                 member_info = await self.bot.get_group_member_info(
                     group_id=str(self.gid), user_id=str(self.rank[i][0]), no_cache=True
                 )
-                nicknames.append(
+                nickname=(
                     member_info["user_displayname"]
                     if member_info["user_displayname"]
                     else member_info["user_name"]
                 )
+                nicknames.append(remove_control_characters(nickname))
             except ActionFailed as e:
                 nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
         return nicknames
@@ -289,11 +283,12 @@ class V12GuildMsgProcesser(V12MsgProcesser):
                 member_info = await self.bot.get_guild_member_info(
                     guild_id=str(self.gid), user_id=str(self.rank[i][0]), no_cache=True
                 )
-                nicknames.append(
+                nickname=(
                     member_info["user_displayname"]
                     if member_info["user_displayname"]
                     else member_info["user_name"]
                 )
+                nicknames.append(remove_control_characters(nickname))
             except ActionFailed as e:
                 nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
         return nicknames

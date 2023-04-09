@@ -119,7 +119,7 @@ async def _group_message(
 @ranks.handle()
 async def _private_message(
     matcher: Matcher,
-    event: Union[V11Event.GroupMessageEvent, V12Event.GroupMessageEvent],
+    event: Union[V11Event.PrivateMessageEvent, V12Event.PrivateMessageEvent],
     state: T_State,
     commands: Tuple[str, ...] = Command(),
     args: Union[V11Message, V12Message] = CommandArg(),
@@ -156,7 +156,9 @@ async def handle_message(
         plugin_config.dialectlist_excluded_people.append(bot_id["user_id"])
     msg_list = await get_message_records(
         bot_ids=[str(bot.self_id)],
-        platforms=[str(bot.platform)],
+        platforms=['qq']
+        if isinstance(event, V11Event.GroupMessageEvent)
+        else [str(bot.platform)],
         group_ids=[str(event.group_id)]
         if isinstance(event, (V11Event.GroupMessageEvent, V12Event.GroupMessageEvent))
         else None,
@@ -167,13 +169,15 @@ async def handle_message(
         time_start=start.astimezone(ZoneInfo("UTC")),
         time_stop=stop.astimezone(ZoneInfo("UTC")),
     )
+    for i in msg_list:
+        logger.debug(i.plain_text)
 
     if isinstance(event, V11Event.GroupMessageEvent):
         processer = V11GroupMsgProcesser(bot=bot, gid=str(event.group_id), msg_list=msg_list)  # type: ignore
     elif isinstance(event, V12Event.GroupMessageEvent):
         processer = V12GroupMsgProcesser(bot=bot, gid=str(event.group_id), msg_list=msg_list)  # type: ignore
     elif isinstance(event, V12Event.ChannelMessageEvent):
-        pass
+        processer = V12GuildMsgProcesser(bot=bot, gid=str(event.guild_id), msg_list=msg_list)  # type: ignore
     else:
         raise NotImplementedError("没支持呢(())")
 
