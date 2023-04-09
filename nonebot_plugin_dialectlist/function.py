@@ -1,23 +1,47 @@
+import abc
 import pygal
 import unicodedata
+import requests
+from datetime import datetime
 
-from typing_extensions import Literal
-from typing import List, Optional, Dict
+from typing import List, Dict, Union
 from pygal.style import Style
 
+from nonebot import require
 from nonebot.log import logger
-from nonebot.adapters import Bot
-from nonebot.adapters.onebot.v11 import Message,MessageSegment
+from nonebot.params import Arg
+from nonebot.typing import T_State
+from nonebot.matcher import Matcher
+from nonebot.adapters import Bot, Message
+from nonebot.adapters.onebot import V11Bot, V12Bot, V11Message, V12Message, V11MessageSegment, V12MessageSegment  # type: ignore
 from nonebot.exception import ActionFailed
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo  # type: ignore
+
+require("nonebot_plugin_htmlrender")
+from nonebot_plugin_htmlrender import (
+    md_to_pic,
+    html_to_pic,
+    text_to_pic,
+    capture_element,
+    template_to_pic,
+    template_to_html,
+)
+
+require("nonebot_plugin_chatrecorder")
+from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_chatrecorder.model import MessageRecord
 
 from .config import plugin_config
-style=Style(font_family=plugin_config.dialectlist_font)
+
+style = Style(font_family=plugin_config.dialectlist_font)
 
 
-def remove_control_characters(string:str) -> str:
-    """将字符串中的控制符去除
+def remove_control_characters(string: str) -> str:
+    """### 将字符串中的控制符去除
 
     Args:
         string (str): 需要去除的字符串
@@ -25,18 +49,61 @@ def remove_control_characters(string:str) -> str:
     Returns:
         (str): 经过处理的字符串
     """
-    return "".join(ch for ch in string if unicodedata.category(ch)[0]!="C")
+    return "".join(ch for ch in string if unicodedata.category(ch)[0] != "C")
 
 
-async def msg_counter(msg_list:List[MessageRecord])->Dict[str,int]:
-    '''
-        计算出话最多的几个人的id并返回
-    '''
+def parse_datetime(key: str):
+    """解析数字，并将结果存入 state 中"""
 
-    lst:Dict[str,int] = {}
+    async def _key_parser(
+        matcher: Matcher,
+        state: T_State,
+        input: Union[datetime, Union[V11Message, V12Message]] = Arg(key),
+    ):
+        if isinstance(input, datetime):
+            return
+
+        plaintext = input.extract_plain_text()
+        try:
+            state[key] = get_datetime_fromisoformat_with_timezone(plaintext)
+        except ValueError:
+            await matcher.reject_arg(key, "请输入正确的日期，不然我没法理解呢！")
+
+    return _key_parser
+
+
+def get_datetime_now_with_timezone() -> datetime:
+    """获取当前时间，并包含时区信息"""
+    if plugin_config.timezone:
+        return datetime.now(ZoneInfo(plugin_config.timezone))
+    else:
+        return datetime.now().astimezone()
+
+
+def get_datetime_fromisoformat_with_timezone(date_string: str) -> datetime:
+    """从 iso8601 格式字符串中获取时间，并包含时区信息"""
+    if plugin_config.timezone:
+        return datetime.fromisoformat(date_string).astimezone(
+            ZoneInfo(plugin_config.timezone)
+        )
+    else:
+        return datetime.fromisoformat(date_string).astimezone()
+
+
+def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
+    """### 计算每个人的消息量
+
+    Args:
+        msg_list (list[MessageRecord]): 需要处理的消息列表
+
+    Returns:
+        (dict[str,int]): 处理后的消息数量字典,键为用户,值为消息数量
+    """
+
+    lst: Dict[str, int] = {}
     msg_len = len(msg_list)
-    logger.info('wow , there are {} msgs to count !!!'.format(msg_len))
-    
+    logger.info("wow , there are {} msgs to count !!!".format(msg_len))
+
     for i in msg_list:
         try:
             lst[i.user_id] += 1
@@ -44,81 +111,189 @@ async def msg_counter(msg_list:List[MessageRecord])->Dict[str,int]:
             lst[i.user_id] = 1
 
     logger.debug(lst)
-    
+
     return lst
 
-async def msg_list2msg(
-    msg_list:Dict[str,int],
-    gid:int,
-    got_num:int,
-    platform:Optional[Literal['guild', 'qq']],
-    bot:Bot
-)->Message:
-    
-    ranking = []
-    while len(ranking) < got_num:
-        
+
+def got_rank(msg_dict: Dict[str, int]) -> List[List[Union[str, int]]]:
+    """### 获得排行榜
+
+    Args:
+        msg_dict (Dict[str,int]): 要处理的字典
+
+    Returns:
+        List[Tuple[str,int]]: 排行榜列表(已排序)
+    """
+    rank = []
+    while len(rank) < plugin_config.dialectlist_get_num:
         try:
-            maxkey = max(msg_list, key=msg_list.get)  # type: ignore
+            max_key = max(msg_dict.items(), key=lambda x: x[1])
+            rank.append(list(max_key))
         except ValueError:
-            ranking.append(["null",0])
+            rank.append(["null", 0])
             continue
 
-        logger.debug('searching member {} from group {}'.format(str(maxkey),str(gid)))
-    
-        try:
-            if platform == 'qq':
-                member_info = await bot.call_api(
-                    "get_group_member_info",
-                    group_id=int(gid),
-                    user_id=int(maxkey),
-                    no_cache=True
-                )
-                nickname:str = member_info['nickname']if not member_info['card'] else member_info['card']
-            else:
-                member_info = await bot.call_api(
-                    "get_guild_member_profile",
-                    guild_id=str(gid),
-                    user_id=str(maxkey)
-                )
-                nickname:str = member_info['nickname']
-            ranking.append([remove_control_characters(nickname).strip(),msg_list.pop(maxkey)])
-        except ActionFailed as e:
-            logger.warning(e)
-            logger.warning('member {} is not exit in group {}'.format(str(maxkey),str(gid)))
-            msg_list.pop(maxkey)
+    return rank
 
 
-    logger.debug('loaded list:\n{}'.format(ranking))
-    
-    if plugin_config.dialectlist_visualization:
-        if plugin_config.dialectlist_visualization_type == '圆环图':
-            view = pygal.Pie(inner_radius=0.6,style=style)
-        elif plugin_config.dialectlist_visualization_type == '饼图':
+class MsgProcesser(abc.ABC):
+    def __init__(self, bot: Bot, gid: str, msg_list: List[MessageRecord]) -> None:
+        if isinstance(bot, Bot):
+            self.bot = bot
+        else:
+            self.bot = None
+        self.gid = gid
+        self.rank = got_rank(msg_counter(msg_list))
+
+    @abc.abstractmethod
+    async def get_nickname_list(self) -> List:
+        """
+        ### 获得昵称
+        #### 抽象原因
+        要对onebot协议不同版本进行适配
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_head_portrait_urls(self) -> List:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def get_send_msg(self) -> Message:
+        raise NotImplementedError
+
+    async def get_msg(self) -> List[Union[str, bytes, None]]:
+        str_msg = await self.render_template_msg()
+        pic_msg = None
+        if plugin_config.dialectlist_visualization:
+            try:
+                pic_msg = self.render_template_pic()
+            except OSError:
+                plugin_config.dialectlist_visualization = False
+                str_msg += "\n\n无法发送可视化图片，请检查是否安装GTK+，详细安装教程可见github\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer \n若不想安装这个软件，再次使用这个指令不会显示这个提示"
+        return [str_msg, pic_msg]
+
+    async def render_template_msg(self) -> str:
+        """渲染文字"""
+        string: str = ""
+        rank: List = self.rank
+        nicknames: List = await self.get_nickname_list()
+        for i in range(len(rank)):
+            index = i + 1
+            nickname, chatdatanum = nicknames[i], rank[i]
+            str_example = plugin_config.dialectlist_string_format.format(
+                index=index, nickname=nickname, chatdatanum=chatdatanum
+            )
+            string += str_example
+
+        return string
+
+    def render_template_pic(self) -> bytes:
+        if plugin_config.dialectlist_visualization_type == "圆环图":
+            view = pygal.Pie(inner_radius=0.6, style=style)
+        elif plugin_config.dialectlist_visualization_type == "饼图":
             view = pygal.Pie(style=style)
         else:
             view = pygal.Bar(style=style)
-            
-        view.title = '消息可视化'
-        for i in ranking:
-            view.add(str(i[0]),int(i[1]))
-        try:
-            png: bytes = view.render_to_png()   # type: ignore
-            process_msg =  Message(MessageSegment.image(png))
-        except OSError:
-            logger.error('GTK+(GIMP Toolkit) is not installed, the svg can not be transformed to png')
-            plugin_config.dialectlist_visualization = False
-            process_msg =  Message('无法发送可视化图片，请检查是否安装GTK+，详细安装教程可见github\nhttps://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer \n若不想安装这个软件，再次使用这个指令不会显示这个提示')
-    else:
-        process_msg = ''
-        
-    out:str = ''
-    for i in range(got_num):
-        index = i+1
-        nickname,chatdatanum = ranking[i]
-        str_example = plugin_config.dialectlist_string_format.format(index=index,nickname=nickname,chatdatanum=chatdatanum)
-        out = out + str_example
-        
-    logger.debug(out)
-    
-    return Message(out)+process_msg
+
+        view.title = "消息可视化"
+        for i, j in zip(self.rank, self.get_nickname_list()):  # type: ignore
+            view.add(str(j), int(i[1]))
+
+        png: bytes = view.render_to_png()  # type: ignore
+        self.img = png
+        return png
+
+
+class V11GroupMsgProcesser(MsgProcesser):
+    def __init__(self, bot: V11Bot, gid: str, msg_list: List[MessageRecord]) -> None:
+        super().__init__(bot, gid, msg_list)
+        self.bot = bot
+
+    async def get_nickname_list(self) -> List:
+        nicknames = []
+        for i in range(len(self.rank)):
+            try:
+                member_info = await self.bot.get_group_member_info(
+                    group_id=int(self.gid), user_id=int(self.rank[i][0]), no_cache=True
+                )
+                nicknames.append(
+                    member_info["nickname"]
+                    if not member_info["card"]
+                    else member_info["card"]
+                )
+            except ActionFailed as e:
+                nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
+        return nicknames
+
+    def get_head_portrait_urls(self) -> List:
+        self.portrait_urls = [
+            "http://q2.qlogo.cn/headimg_dl?dst_uin={}&spec=640".format(i[0])
+            for i in self.rank
+        ]
+        return self.portrait_urls
+
+    async def get_send_msg(self) -> V11Message:
+        msgs: List = await self.get_msg()
+        msg = V11Message()
+        msg += V11MessageSegment.text(msgs[0])  # type: ignore
+        msg += V12MessageSegment.image(msgs[1])  # type: ignore
+        return msg
+
+
+class V12MsgProcesser(MsgProcesser):
+    def __init__(self, bot: V12Bot, gid: str, msg_list: List[MessageRecord]) -> None:
+        super().__init__(bot, gid, msg_list)
+        self.bot = bot
+
+    async def get_send_msg(self) -> V12Message:
+        msgs: List = await self.get_msg()
+        msg = V12Message()
+        msg += V12MessageSegment.text(msgs[0])  # type: ignore
+        msg += V12MessageSegment.image(msgs[1])  # type: ignore
+        return msg
+
+    def get_head_portrait_urls(self) -> List:
+        return super().get_head_portrait_urls()
+
+
+class V12GroupMsgProcesser(V12MsgProcesser):
+    def __init__(self, bot: V12Bot, gid: str, msg_list: List[MessageRecord]) -> None:
+        super().__init__(bot, gid, msg_list)
+
+    async def get_nickname_list(self) -> List:
+        nicknames = []
+        for i in range(len(self.rank)):
+            try:
+                member_info = await self.bot.get_group_member_info(
+                    group_id=str(self.gid), user_id=str(self.rank[i][0]), no_cache=True
+                )
+                nicknames.append(
+                    member_info["user_displayname"]
+                    if member_info["user_displayname"]
+                    else member_info["user_name"]
+                )
+            except ActionFailed as e:
+                nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
+        return nicknames
+
+
+class V12GuildMsgProcesser(V12MsgProcesser):
+    def __init__(self, bot: V12Bot, gid: str, msg_list: List[MessageRecord]) -> None:
+        super().__init__(bot, gid, msg_list)
+
+    async def get_nickname_list(self) -> List:
+        nicknames = []
+        for i in range(len(self.rank)):
+            try:
+                member_info = await self.bot.get_guild_member_info(
+                    guild_id=str(self.gid), user_id=str(self.rank[i][0]), no_cache=True
+                )
+                nicknames.append(
+                    member_info["user_displayname"]
+                    if member_info["user_displayname"]
+                    else member_info["user_name"]
+                )
+            except ActionFailed as e:
+                nicknames.append("{}这家伙不在群里了".format(self.rank[i][0]))
+        return nicknames
