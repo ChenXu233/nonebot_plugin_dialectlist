@@ -1,0 +1,20 @@
+[project]
+name = "nonebot_plugin_dialectlist"
+version = "1.6.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
+]
+dependencies = [
+    "nonebot2>=2.3.1",
+    "nonebot-plugin-chatrecorder>=0.6.0",
+    "pygal>=3.0.4",
+    "requests>=2.32.3",
+]
+requires-python = ">=3.10,<4.0"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
