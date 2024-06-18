@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_dialectlist"
-version = "1.6.0"
+version = "2.0.0"
 description = "Default template for PDM package"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
@@ -26,7 +26,7 @@ dev = [
 ]
 
 [tool.pdm]
-distribution = false
+distribution = true
 
 [tool.ruff]
 line-length = 80
