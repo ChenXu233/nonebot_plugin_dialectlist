@@ -1,185 +1,265 @@
-import re
-import time
-from typing import Tuple, Union
-from datetime import datetime, timedelta
+from nonebot import require
 
-from nonebot import on_command, require
+require("nonebot_plugin_chatrecorder")
+require("nonebot_plugin_apscheduler")
+require("nonebot_plugin_userinfo")
+require("nonebot_plugin_alconna")
+require("nonebot_plugin_cesaa")
+
+import re
+import os
+import time
+
+import nonebot_plugin_saa as saa
+
+from typing import Tuple, Union, Optional, List
+from datetime import datetime, timedelta
+from arclet.alconna import ArparmaBehavior
+from arclet.alconna.arparma import Arparma
+
+from nonebot import on_command, get_driver
 from nonebot.log import logger
 from nonebot.params import Command, CommandArg, Arg, Depends
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
-from nonebot.adapters.onebot import V11Bot, V12Bot, V11Event, V12Event, V11Message, V12Message  # type: ignore
+from nonebot import get_driver
+from nonebot.adapters import Bot, Event, Message
+from nonebot.params import Arg, Depends
+from nonebot.permission import SUPERUSER
+from nonebot.plugin import PluginMetadata, inherit_supported_adapters
+from nonebot.typing import T_State
+from nonebot_plugin_alconna import (
+    Alconna,
+    AlconnaMatch,
+    AlconnaMatcher,
+    AlconnaQuery,
+    Args,
+    Match,
+    Option,
+    Query,
+    image_fetch,
+    on_alconna,
+    store_true,
+)
 
-try:
-    from zoneinfo import ZoneInfo
-except ImportError:
-    from backports.zoneinfo import ZoneInfo  # type: ignore
-
-require("nonebot_plugin_chatrecorder")
 from nonebot_plugin_chatrecorder import get_message_records
+from nonebot_plugin_userinfo import EventUserInfo, UserInfo, get_user_info
+from nonebot_plugin_session import Session, SessionIdType, extract_session
+from nonebot_plugin_cesaa import get_messages_plain_text
 
-from .function import *
-from .config import plugin_config
 
+# from . import migrations #抄词云的部分代码，还不知道这有什么用
+# from .function import *
+from .config import Config, plugin_config
+from .utils import (
+    get_datetime_fromisoformat_with_timezone,
+    get_datetime_now_with_timezone,
+    got_rank,
+    msg_counter,
+    persist_id2user_id,
+)
 
-ranks = on_command(
-    "群话痨排行榜",
-    aliases={
-        "今日群话痨排行榜",
-        "昨日群话痨排行榜",
-        "本周群话痨排行榜",
-        "上周群话痨排行榜",
-        "本月群话痨排行榜",
-        "年度群话痨排行榜",
-        "历史群话痨排行榜",
-    },
-    priority=6,
-    block=True,
+with open(os.path.dirname(__file__) + "/usage.md") as f:
+    usage = f.read()
+
+__plugin_meta__ = PluginMetadata(
+    name="B话排行榜",
+    description="调查群U的B话数量，以一定的顺序排序后排序出来。",
+    usage=usage,
+    homepage="https://github.com/ChenXu233/nonebot_plugin_dialectlist",
+    type="application",
+    supported_adapters=inherit_supported_adapters(
+        "nonebot_plugin_chatrecorder", "nonebot_plugin_saa", "nonebot_plugin_alconna"
+    ),
+    config=Config,
+    # extra={"orm_version_location": migrations},
 )
 
 
-@ranks.handle()
+# 抄的词云，不过真的很适合B话榜。
+class SameTime(ArparmaBehavior):
+    def operate(self, interface: Arparma):
+        type = interface.query("type")
+        time = interface.query("time")
+        if type is None and time:
+            interface.behave_fail()
+
+
+rank_cmd = on_alconna(
+    Alconna(
+        "B话榜",
+        Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
+            "time?", str
+        ],
+        behaviors=[SameTime()],
+    ),
+    use_cmd_start=True,
+)
+
+
+def wrapper(slot: Union[int, str], content: Optional[str]) -> str:
+    if slot == "type" and content:
+        return content
+    return ""  # pragma: no cover
+
+
+rank_cmd.shortcut(
+    r"(?P<type>今日|昨日|本周|上周|本月|上月|年度|历史)B话榜",
+    {
+        "prefix": True,
+        "command": "B话榜 ",
+        "wrapper": wrapper,
+        "args": ["{type}"],
+    },
+)
+
+
+def parse_datetime(key: str):
+    """解析数字，并将结果存入 state 中"""
+
+    async def _key_parser(
+        matcher: AlconnaMatcher,
+        state: T_State,
+        input: Union[datetime, Message] = Arg(key),
+    ):
+        if isinstance(input, datetime):
+            return
+
+        plaintext = input.extract_plain_text()
+        try:
+            state[key] = get_datetime_fromisoformat_with_timezone(plaintext)
+        except ValueError:
+            await matcher.reject_arg(key, "请输入正确的日期，不然我没法理解呢！")
+
+    return _key_parser
+
+
+# TODO 处理函数更新
+# 参考词云
+
+
+# 这段函数完全抄的词云
+@rank_cmd.handle()
 async def _group_message(
-    matcher: Matcher,
-    event: Union[
-        V11Event.GroupMessageEvent,
-        V12Event.GroupMessageEvent,
-        V12Event.ChannelMessageEvent,
-    ],
     state: T_State,
-    commands: Tuple[str, ...] = Command(),
-    args: Union[V11Message, V11Message] = CommandArg(),
+    type: Optional[str] = None,
+    time: Optional[str] = None,
 ):
-    if isinstance(event, V11Event.GroupMessageEvent):
-        logger.debug("handle command from onebotV11 adapter(qq)")
-    elif isinstance(event, V12Event.GroupMessageEvent):
-        logger.debug("handle command from onebotV12 adapter")
 
     dt = get_datetime_now_with_timezone()
-    command = commands[0]
 
-    if command == "群话痨排行榜":
-        state["start"] = dt.replace(
-            year=2000, month=1, day=1, hour=0, minute=0, second=0, microsecond=0
-        )
-        state["stop"] = dt
-    elif command == "今日群话痨排行榜":
+    if not type:
+        await rank_cmd.finish(__plugin_meta__.usage)
+
+    dt = get_datetime_now_with_timezone()
+
+    if type == "今日":
         state["start"] = dt.replace(hour=0, minute=0, second=0, microsecond=0)
         state["stop"] = dt
-    elif command == "昨日群话痨排行榜":
+    elif type == "昨日":
         state["stop"] = dt.replace(hour=0, minute=0, second=0, microsecond=0)
         state["start"] = state["stop"] - timedelta(days=1)
-    elif command == "前日群话痨排行榜":
-        state["stop"] = dt.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) - timedelta(days=1)
-        state["start"] = state["stop"] - timedelta(days=1)
-    elif command == "本周群话痨排行榜":
+    elif type == "本周":
         state["start"] = dt.replace(
             hour=0, minute=0, second=0, microsecond=0
         ) - timedelta(days=dt.weekday())
         state["stop"] = dt
-    elif command == "上周群话痨排行榜":
-        state["start"] = dt.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) - timedelta(days=dt.weekday() + 7)
+    elif type == "上周":
         state["stop"] = dt.replace(
             hour=0, minute=0, second=0, microsecond=0
         ) - timedelta(days=dt.weekday())
-    elif command == "本月群话痨排行榜":
+        state["start"] = state["stop"] - timedelta(days=7)
+    elif type == "本月":
         state["start"] = dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         state["stop"] = dt
-    elif command == "年度群话痨排行榜":
+    elif type == "上月":
+        state["stop"] = dt.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(microseconds=1)
+        state["start"] = state["stop"].replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+    elif type == "年度":
         state["start"] = dt.replace(
             month=1, day=1, hour=0, minute=0, second=0, microsecond=0
         )
         state["stop"] = dt
-    elif command == "历史群话痨排行榜":
-        plaintext = args.extract_plain_text().strip()
-        match = re.match(r"^(.+?)(?:~(.+))?$", plaintext)
-        if match:
-            start = match.group(1)
-            stop = match.group(2)
-            try:
-                state["start"] = get_datetime_fromisoformat_with_timezone(start)
-                if stop:
-                    state["stop"] = get_datetime_fromisoformat_with_timezone(stop)
-                else:
-                    # 如果没有指定结束日期，则认为是指查询这一天的数据
-                    state["start"] = state["start"].replace(
-                        hour=0, minute=0, second=0, microsecond=0
-                    )
-                    state["stop"] = state["start"] + timedelta(days=1)
-            except ValueError:
-                await matcher.finish("请输入正确的日期，不然我没法理解呢！")
-    else:
-        pass
+    elif type == "历史":
+        if time:
+            plaintext = time
+            if match := re.match(r"^(.+?)(?:~(.+))?$", plaintext):
+                start = match[1]
+                stop = match[2]
+                try:
+                    state["start"] = get_datetime_fromisoformat_with_timezone(start)
+                    if stop:
+                        state["stop"] = get_datetime_fromisoformat_with_timezone(stop)
+                    else:
+                        # 如果没有指定结束日期，则认为是所给日期的当天的词云
+                        state["start"] = state["start"].replace(
+                            hour=0, minute=0, second=0, microsecond=0
+                        )
+                        state["stop"] = state["start"] + timedelta(days=1)
+                except ValueError:
+                    await rank_cmd.finish("请输入正确的日期，不然我没法理解呢！")
 
 
-@ranks.handle()
-async def _private_message(
-    matcher: Matcher,
-    event: Union[V11Event.PrivateMessageEvent, V12Event.PrivateMessageEvent],
-    state: T_State,
-    commands: Tuple[str, ...] = Command(),
-    args: Union[V11Message, V12Message] = CommandArg(),
-):
-    # TODO:支持私聊的查询
-    await matcher.finish("暂不支持私聊查询，今后可能会添加这一项功能")
-
-
-@ranks.got(
+@rank_cmd.got(
     "start",
     prompt="请输入你要查询的起始日期（如 2022-01-01）",
     parameterless=[Depends(parse_datetime("start"))],
 )
-@ranks.got(
+@rank_cmd.got(
     "stop",
     prompt="请输入你要查询的结束日期（如 2022-02-22）",
     parameterless=[Depends(parse_datetime("stop"))],
 )
-async def handle_message(
-    matcher: Matcher,
-    bot: Union[V11Bot, V12Bot],
-    event: Union[
-        V11Event.GroupMessageEvent,
-        V12Event.GroupMessageEvent,
-        V12Event.ChannelMessageEvent,
-    ],
-    stop: datetime = Arg(),
+async def handle_rank(
+    bot: Bot,
+    event: Event,
+    session: Session = Depends(extract_session),
     start: datetime = Arg(),
+    stop: datetime = Arg(),
 ):
-    st = time.time()
-
-    if plugin_config.dialectlist_excluded_self:
-        bot_id = await bot.call_api("get_login_info")
-        plugin_config.dialectlist_excluded_people.append(bot_id["user_id"])
-    msg_list = await get_message_records(
-        bot_ids=[str(bot.self_id)],
-        platforms=['qq']
-        if isinstance(event, V11Event.GroupMessageEvent)
-        else [str(bot.platform)],
-        group_ids=[str(event.group_id)]
-        if isinstance(event, (V11Event.GroupMessageEvent, V12Event.GroupMessageEvent))
-        else None,
-        guild_ids=[str(event.guild_id)]
-        if isinstance(event, V12Event.ChannelMessageEvent)
-        else None,
-        exclude_user_ids=plugin_config.dialectlist_excluded_people,
-        time_start=start.astimezone(ZoneInfo("UTC")),
-        time_stop=stop.astimezone(ZoneInfo("UTC")),
+    """生成词云"""
+    messages = await get_message_records(
+        session=session,
+        id_type=SessionIdType.GROUP,
+        include_bot_id=False,
+        include_bot_type=False,
+        types=["message"],  # 排除机器人自己发的消息
+        time_start=start,
+        time_stop=stop,
+        exclude_id1s=plugin_config.excluded_people,
     )
-    for i in msg_list:
-        logger.debug(i.plain_text)
 
-    if isinstance(event, V11Event.GroupMessageEvent):
-        processer = V11GroupMsgProcesser(bot=bot, gid=str(event.group_id), msg_list=msg_list)  # type: ignore
-    elif isinstance(event, V12Event.GroupMessageEvent):
-        processer = V12GroupMsgProcesser(bot=bot, gid=str(event.group_id), msg_list=msg_list)  # type: ignore
-    elif isinstance(event, V12Event.ChannelMessageEvent):
-        processer = V12GuildMsgProcesser(bot=bot, gid=str(event.guild_id), msg_list=msg_list)  # type: ignore
-    else:
-        raise NotImplementedError("没支持呢(())")
+    rank = got_rank(msg_counter(messages))
+    ids = await persist_id2user_id([int(i[0]) for i in rank])
+    for i in range(len(rank)):
+        rank[i][0] = str(ids[i])
 
-    msg = await processer.get_send_msg()  # type: ignore
-    await matcher.send(msg)
+    string: str = ""
+    nicknames: List = []
+    for i in rank:
+        if user_info := await get_user_info(bot, event, user_id=str(i[0])):
+            (
+                nicknames.append(user_info.user_displayname)
+                if user_info.user_displayname
+                else (
+                    nicknames.append(user_info.user_name)
+                    if user_info.user_name
+                    else nicknames.append(user_info.user_id)
+                )
+            )
+        else:
+            nicknames.append(None)
+    logger.debug(nicknames)
+    for i in range(len(rank)):
+        index = i + 1
+        nickname, chatdatanum = nicknames[i], rank[i][1]
+        str_example = plugin_config.string_format.format(
+            index=index, nickname=nickname, chatdatanum=chatdatanum
+        )
+        string += str_example
+
+    await saa.Text(string).finish(reply=True)

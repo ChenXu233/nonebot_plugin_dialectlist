@@ -10,11 +10,26 @@ dependencies = [
     "nonebot-plugin-chatrecorder>=0.6.0",
     "pygal>=3.0.4",
     "requests>=2.32.3",
+    "nonebot-plugin-apscheduler>=0.4.0",
+    "nonebot-plugin-alconna>=0.46.6",
+    "nonebot-plugin-cesaa>=0.4.0",
+    "nonebot-plugin-userinfo>=0.2.4",
 ]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
 license = {text = "MIT"}
 
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.9",
+]
+
 [tool.pdm]
 distribution = false
+
+[tool.ruff]
+line-length = 80
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "tab"
