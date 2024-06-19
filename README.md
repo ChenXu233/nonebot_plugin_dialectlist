@@ -12,16 +12,15 @@ nonebot-plugin-dialectlist
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
-
 ## 💿安装
 
 通过`pip`或`nb`安装；
 
->**通过pip**安装
+>**通过 pip **安装
 
 `pip install nonebot-plugin-dialectlist`
 
->**通过nb**安装
+>**通过 nb **安装
 
 `nb plugin install nonebot-plugin-dialectlist`
 
@@ -36,29 +35,29 @@ nonebot-plugin-dialectlist
 
 在 .env 中，可以添加以下配置项
 ```python
-dialectlist__string_format = '第{index}名：\n{nickname},{chatdatanum}条消息\n' #消息格式
-dialectlist__string_suffix_format = '你们的职业是水群吗？————MYX\n计算花费时间:{timecost}秒' #消息后缀格式
+dialectlist__string_format = '第{index}名：\n{nickname},{chatdatanum}条消息、n' #消息格式
+dialectlist__string_suffix_format = '你们的职业是水群吗？————MYX\n 计算花费时间：{timecost}秒' #消息后缀格式
 dialectlist__get_num = 10 #获取人数数量
 dialectlist__visualization = True #是否可视化
 dialectlist__visualization_type = '圆环图' #可视化方案
 dialectlist__font = 'SimHei'#字体格式
-dialectlist__excluded_people = []#排除的人的QQ号(或频道号?(未经测试))
-dialectlist__excluded_self = True #是否排除机器人自己QQ
+dialectlist__excluded_people = []#排除的人的 QQ 号（或频道号？（未经测试）)
+dialectlist__excluded_self = True #是否排除机器人自己 QQ
 ```
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
  ### ⚠ 注意！！
  
-  需要提前安装好[GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)(仅Windows环境下需要安装GTK+)
+  需要提前安装好 [GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)（仅 Windows 环境下需要安装 GTK+)
   
-  在Windows以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
+  在 Windows 以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
 
 ## 🗨命令
 __！！注意！！__
-新版本指令调用方式改变，改为更易理解也更好打的B话榜。
-所以下面的调用需要把群话痨改成B话，排行榜改成榜。
-即 群话痨 -> B话 ， 排行榜 -> 榜
-比如 今日群话痨排行榜 -> 今日B话榜
+新版本指令调用方式改变，改为更易理解也更好打的 B 话榜。
+所以下面的调用需要把群话痨改成 B 话，排行榜改成榜。
+即 群话痨 -> B 话 ， 排行榜 -> 榜
+比如 今日群话痨排行榜 -> 今日 B 话榜
 以此类推。
 
 -`/群话痨排行榜` ————看看有史以来（机器人存在以来）群友们发了多少消息！
@@ -100,7 +99,7 @@ __！！注意！！__
   
 ### V1.4
 
-  - 适配新版本的chatrecorder,暂时停止频道支持
+  - 适配新版本的 chatrecorder, 暂时停止频道支持
 
 ### V2.0
 
@@ -110,22 +109,21 @@ __！！注意！！__
 
 ### 感谢
 
-本插件的__init__.py中的处理函数参考了词云中的方法 ~~（其实大部分都是Ctrl+C Ctr+V）~~
+本插件的__init__.py 中的处理函数参考了词云中的方法 ~~（其实大部分都是 Ctrl+C Ctr+V）~~
 
 [nonebot-plugin-wordcloud](https://github.com/he0119/nonebot-plugin-wordcloud)
-  
   
 ## TODO
 
 - [x] 适配全平台
 
-- [ ] 私聊的查询(超级用户可以任意查询群聊的信息)
+- [ ] 私聊的查询（超级用户可以任意查询群聊的信息）
 
 - [ ] 关键词查询
 
-- [ ] 尝试利用jinja2模板引擎制作可视化图片(((真的可以吗?)))
+- [ ] 尝试利用 jinja2 模板引擎制作可视化图片 ((（真的可以吗？))
   
- 待补充......
+ 待补充。.....
 
 ## 题外话
 ~~整个项目快被我写成屎山了~~
