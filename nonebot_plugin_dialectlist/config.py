@@ -13,13 +13,6 @@ class ScopedConfig(BaseModel):
     excluded_people: List[str] = []  # 排除的人的QQ号
     visualization_type: Literal["饼图", "圆环图", "柱状图"] = "圆环图"  # 可视化方案
 
-    @field_validator("get_num")
-    @classmethod
-    def check_priority(cls, v: int) -> int:
-        if v >= 1:
-            return v
-        raise ValueError("表中的人数必须大于一")
-
 
 class Config(BaseModel):
     dialectlist: ScopedConfig = ScopedConfig()
