@@ -7,22 +7,17 @@ require("nonebot_plugin_alconna")
 require("nonebot_plugin_cesaa")
 
 import re
-import os
-import time
 
 import nonebot_plugin_saa as saa
 
-from typing import Tuple, Union, Optional, List
+from typing import Union, Optional, List
 from datetime import datetime, timedelta
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
 
-from nonebot import on_command, get_driver
 from nonebot.log import logger
-from nonebot.params import Command, CommandArg, Arg, Depends
+from nonebot.params import Arg, Depends
 from nonebot.typing import T_State
-from nonebot.matcher import Matcher
-from nonebot import get_driver
 from nonebot.adapters import Bot, Event, Message
 from nonebot.params import Arg, Depends
 from nonebot.permission import SUPERUSER
@@ -39,18 +34,16 @@ from nonebot_plugin_alconna import (
     Query,
     image_fetch,
     on_alconna,
-    store_true,
 )
 
 from nonebot_plugin_chatrecorder import get_message_records
-from nonebot_plugin_userinfo import EventUserInfo, UserInfo, get_user_info
+from nonebot_plugin_userinfo import get_user_info
 from nonebot_plugin_session import Session, SessionIdType, extract_session
-from nonebot_plugin_cesaa import get_messages_plain_text
-
 
 # from . import migrations #抄词云的部分代码，还不知道这有什么用
 # from .function import *
 from .config import Config, plugin_config
+from .usage import __usage__
 from .utils import (
     get_datetime_fromisoformat_with_timezone,
     get_datetime_now_with_timezone,
@@ -59,13 +52,10 @@ from .utils import (
     persist_id2user_id,
 )
 
-with open(os.path.dirname(__file__) + "/usage.md") as f:
-    usage = f.read()
-
 __plugin_meta__ = PluginMetadata(
     name="B话排行榜",
     description="调查群U的B话数量，以一定的顺序排序后排序出来。",
-    usage=usage,
+    usage=__usage__,
     homepage="https://github.com/ChenXu233/nonebot_plugin_dialectlist",
     type="application",
     supported_adapters=inherit_supported_adapters(

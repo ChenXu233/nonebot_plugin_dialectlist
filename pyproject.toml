@@ -23,6 +23,8 @@ license = {text = "MIT"}
 [project.optional-dependencies]
 dev = [
     "ruff>=0.4.9",
+    "setuptools>=70.0.0",
+    "twine>=5.1.0",
 ]
 
 [tool.pdm]

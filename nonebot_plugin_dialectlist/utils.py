@@ -7,7 +7,6 @@ from sqlalchemy.sql import ColumnElement
 
 from nonebot.log import logger
 from nonebot.params import Depends
-from nonebot.compat import model_dump
 from nonebot.matcher import Matcher
 
 # from nonebot.permission import SUPERUSER
