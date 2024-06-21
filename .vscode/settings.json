@@ -9,6 +9,7 @@
         "chatrecorder",
         "dialectlist",
         "displayname",
+        "htmlrender",
         "parameterless",
         "pyecharts",
         "pygal",
