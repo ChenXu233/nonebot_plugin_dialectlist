@@ -10,8 +10,11 @@
         "dialectlist",
         "displayname",
         "parameterless",
+        "pyecharts",
         "pygal",
         "sqlalchemy",
-        "userinfo"
+        "userinfo",
+        "xaxis",
+        "yaxis"
     ]
 }

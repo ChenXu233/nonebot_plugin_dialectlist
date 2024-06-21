@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_dialectlist"
-version = "2.0.0"
+version = "2.0.3"
 description = "Default template for PDM package"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
@@ -14,6 +14,8 @@ dependencies = [
     "nonebot-plugin-alconna>=0.46.6",
     "nonebot-plugin-cesaa>=0.4.0",
     "nonebot-plugin-userinfo>=0.2.4",
+    "pyecharts>=2.0.5",
+    "nonebot-plugin-htmlrender>=0.3.2",
 ]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
