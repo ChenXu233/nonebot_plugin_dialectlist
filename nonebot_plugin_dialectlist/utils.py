@@ -140,7 +140,12 @@ def got_rank(msg_dict: Dict[str, int]) -> List[List[Union[str, int]]]:
             rank.append(list(max_key))
             msg_dict.pop(max_key[0])
         except ValueError:
-            break
+            logger.error(
+                "群内拥有聊天记录的人数不足，无法获取到长度为{}的排行榜,已将长度变化为：{}".format(
+                    plugin_config.get_num, len(rank)
+                )
+            )
+            break  
 
     return rank
 

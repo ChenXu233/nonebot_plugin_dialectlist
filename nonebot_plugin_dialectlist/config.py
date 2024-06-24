@@ -1,6 +1,6 @@
 from typing import Optional, Literal, List
 from nonebot import get_driver, get_plugin_config
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 
 class ScopedConfig(BaseModel):
