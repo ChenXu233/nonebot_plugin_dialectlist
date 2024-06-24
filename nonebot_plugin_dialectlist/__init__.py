@@ -2,13 +2,17 @@ from nonebot import require
 
 require("nonebot_plugin_chatrecorder")
 require("nonebot_plugin_apscheduler")
+require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_userinfo")
 require("nonebot_plugin_alconna")
 require("nonebot_plugin_cesaa")
 
 import re
-
 import nonebot_plugin_saa as saa
+
+from pyecharts.charts import Bar
+from pyecharts import options as opts
+from pyecharts.globals import ThemeType
 
 from typing import Union, Optional, List
 from datetime import datetime, timedelta
@@ -37,6 +41,8 @@ from nonebot_plugin_alconna import (
 )
 
 from nonebot_plugin_chatrecorder import get_message_records
+from nonebot_plugin_localstore import get_cache_file
+from nonebot_plugin_htmlrender import html_to_pic
 from nonebot_plugin_userinfo import get_user_info
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
@@ -50,6 +56,7 @@ from .utils import (
     got_rank,
     msg_counter,
     persist_id2user_id,
+    parse_datetime
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -74,23 +81,23 @@ class SameTime(ArparmaBehavior):
         if type is None and time:
             interface.behave_fail()
 
+def wrapper(slot: Union[int, str], content: Optional[str]) -> str:
+    if slot == "type" and content:
+        return content
+    return ""  # pragma: no cover
 
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
         Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
-            "time?", str
+            "time?", str,
+            "group_id?", int
         ],
         behaviors=[SameTime()],
     ),
+    aliases={"废话榜"},
     use_cmd_start=True,
 )
-
-
-def wrapper(slot: Union[int, str], content: Optional[str]) -> str:
-    if slot == "type" and content:
-        return content
-    return ""  # pragma: no cover
 
 
 rank_cmd.shortcut(
@@ -103,40 +110,20 @@ rank_cmd.shortcut(
     },
 )
 
-
-def parse_datetime(key: str):
-    """解析数字，并将结果存入 state 中"""
-
-    async def _key_parser(
-        matcher: AlconnaMatcher,
-        state: T_State,
-        input: Union[datetime, Message] = Arg(key),
-    ):
-        if isinstance(input, datetime):
-            return
-
-        plaintext = input.extract_plain_text()
-        try:
-            state[key] = get_datetime_fromisoformat_with_timezone(plaintext)
-        except ValueError:
-            await matcher.reject_arg(key, "请输入正确的日期，不然我没法理解呢！")
-
-    return _key_parser
-
-
-# TODO 处理函数更新
-# 参考词云
-
-
 # 这段函数完全抄的词云
 @rank_cmd.handle()
 async def _group_message(
     state: T_State,
+    session: Session = Depends(extract_session),
     type: Optional[str] = None,
     time: Optional[str] = None,
+    group_id: Optional[int] = None,
 ):
 
     dt = get_datetime_now_with_timezone()
+
+    if not group_id:
+        state["group_id"] = session.id2
 
     if not type:
         await rank_cmd.finish(__plugin_meta__.usage)
@@ -211,7 +198,6 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
-    """生成词云"""
     messages = await get_message_records(
         session=session,
         id_type=SessionIdType.GROUP,
@@ -252,4 +238,12 @@ async def handle_rank(
         )
         string += str_example
 
-    await saa.Text(string).finish(reply=True)
+    bar = Bar(init_opts=opts.InitOpts(theme=ThemeType.LIGHT))
+    bar.add_xaxis(nicknames)
+    bar.add_yaxis("B话数量", [i[1] for i in rank]) # type: ignore
+    bar.render(str(get_cache_file("nonebot_plugin_dialectlist","cache.html")))
+    with open(get_cache_file("nonebot_plugin_dialectlist","cache.html")) as f:
+        a = f.read()
+    image = await html_to_pic(a,device_scale_factor=3.2)
+
+    await (saa.Text(string)+saa.Image(image)).finish(reply=True)

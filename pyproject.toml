@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_dialectlist"
-version = "2.0.0"
+version = "2.0.4"
 description = "Default template for PDM package"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
@@ -14,6 +14,8 @@ dependencies = [
     "nonebot-plugin-alconna>=0.46.6",
     "nonebot-plugin-cesaa>=0.4.0",
     "nonebot-plugin-userinfo>=0.2.4",
+    "pyecharts>=2.0.5",
+    "nonebot-plugin-htmlrender>=0.3.2",
 ]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
@@ -35,3 +37,18 @@ line-length = 80
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "tab"
+
+[tool.pdm.scripts]
+
+build = 'pdm run setup.py sdist'
+publish = 'pdm run python -m twine upload dist/*'
+
+
+# 以下为智普 AI 生成，还不知道这玩意有啥用。
+# [tool.pdm.dev-dependencies]
+# black = "^23.1.0"
+# isort = "^5.10.1"
+# pre-commit = "^2.20.0"
+
+# [tool.pdm.global-options]
+# --no-pip-version-check = true

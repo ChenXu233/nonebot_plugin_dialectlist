@@ -1,4 +1,3 @@
-import contextlib
 from datetime import datetime, time, tzinfo
 from typing import Optional, Dict, List, Union
 from zoneinfo import ZoneInfo
@@ -6,21 +5,41 @@ from sqlalchemy import or_, select
 from sqlalchemy.sql import ColumnElement
 
 from nonebot.log import logger
-from nonebot.params import Depends
+from nonebot.params import Arg, Depends
+from nonebot.typing import T_State
 from nonebot.matcher import Matcher
-
-# from nonebot.permission import SUPERUSER
+from nonebot.adapters import Message
 
 from nonebot_plugin_orm import get_session
-from nonebot_plugin_saa import PlatformTarget, get_target
 from nonebot_plugin_session import Session, SessionLevel, extract_session
 from nonebot_plugin_session_orm import SessionModel
 from nonebot_plugin_userinfo import EventUserInfo, UserInfo
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_chatrecorder import MessageRecord
+from nonebot_plugin_alconna import AlconnaMatcher
+
 
 
 from .config import plugin_config
+
+def parse_datetime(key: str):
+    """解析数字，并将结果存入 state 中"""
+
+    async def _key_parser(
+        matcher: AlconnaMatcher,
+        state: T_State,
+        input: Union[datetime, Message] = Arg(key),
+    ):
+        if isinstance(input, datetime):
+            return
+
+        plaintext = input.extract_plain_text()
+        try:
+            state[key] = get_datetime_fromisoformat_with_timezone(plaintext)
+        except ValueError:
+            await matcher.reject_arg(key, "请输入正确的日期，不然我没法理解呢！")
+
+    return _key_parser
 
 
 def get_datetime_now_with_timezone() -> datetime:

@@ -9,9 +9,13 @@
         "chatrecorder",
         "dialectlist",
         "displayname",
+        "htmlrender",
         "parameterless",
+        "pyecharts",
         "pygal",
         "sqlalchemy",
-        "userinfo"
+        "userinfo",
+        "xaxis",
+        "yaxis"
     ]
 }
