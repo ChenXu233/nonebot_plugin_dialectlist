@@ -19,8 +19,8 @@ from nonebot_plugin_chatrecorder import MessageRecord
 from nonebot_plugin_alconna import AlconnaMatcher
 
 
-
 from .config import plugin_config
+
 
 def parse_datetime(key: str):
     """解析数字，并将结果存入 state 中"""
@@ -117,6 +117,18 @@ async def persist_id2user_id(ids: List) -> List[str]:
     return [i.id1 for i in records]
 
 
+async def user_id2persist_id(id: str) -> int:
+    whereclause: List[ColumnElement[bool]] = []
+    whereclause.append(or_(*[SessionModel.id2 == id]))
+    statement = (
+        select(SessionModel).where(*whereclause)
+        # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
+    )
+    async with get_session() as db_session:
+        records = (await db_session.scalars(statement)).all()
+    return records[0].id
+
+
 def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
     """### 计算每个人的消息量
 
@@ -132,13 +144,12 @@ def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
     logger.info("wow , there are {} msgs to count !!!".format(msg_len))
 
     for i in msg_list:
-        logger.debug(i.session_persist_id)
         try:
             lst[str(i.session_persist_id)] += 1
         except KeyError:
             lst[str(i.session_persist_id)] = 1
 
-    logger.debug(lst)
+    logger.debug(f"finish counting, result is {lst}")
 
     return lst
 
