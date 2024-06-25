@@ -6,13 +6,13 @@
 
 <div align="center">
 
-# 话痨排行榜
+# 📃话痨排行榜
 nonebot-plugin-dialectlist
 
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
-## 💿安装
+## 💿 安装
 
 通过`pip`或`nb`安装；
 
@@ -24,12 +24,15 @@ nonebot-plugin-dialectlist
 
 `nb plugin install nonebot-plugin-dialectlist`
 
-### ✅插件依赖于
+### ✅ 插件依赖于
 
 1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————储存历史的消息
-2. saa 和 定时管理 （下次写个更清晰的）
+2. [nonebot-plugin-userinfo](https://github.com/noneplugin/nonebot-plugin-userinfo) ————获取用户信息
+3. [nonebot-plugin-apscheduler](https://github.com/nonebot/plugin-apscheduler) ————定时发送排行榜信息
+4. [nonebot-plugin-alconna](https://github.com/ArcletProject/nonebot-plugin-alconna) ————实现命令解析
+5. [nonebot-plugin-cesaa](https://github.com/MountainDash/nonebot-plugin-send-anything-anywhere) ————实现多平台
   
-## ⚙配置
+## ⚙ 配置
 
 需要**提前配置**本插件所**依赖的插件**！
 
@@ -47,38 +50,41 @@ dialectlist__excluded_self = True #是否排除机器人自己 QQ
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
  ### ⚠ 注意！！
- 
-  需要提前安装好 [GTK+](https://github.com/tschoonj/GTK-for-Windows-Runtime-Environment-Installer)（仅 Windows 环境下需要安装 GTK+)
-  
-  在 Windows 以外的环境中可能不存在插件默认的字体！请自行改为系统中拥有的字体！
+
+> 在旧版插件（2.0.0 以下）中，dialectlist 与后面的配置项只隔了一个下划线，若更新到新版本以后需要俩个下划线。
 
 ## 🗨命令
 __！！注意！！__
 新版本指令调用方式改变，改为更易理解也更好打的 B 话榜。
-所以下面的调用需要把群话痨改成 B 话，排行榜改成榜。
-即 群话痨 -> B 话 ， 排行榜 -> 榜
-比如 今日群话痨排行榜 -> 今日 B 话榜
-以此类推。
+同时也可以用类似 `/今日废话榜` 的方式(只要改前面的就好了)（算是给[盘古之白](https://github.com/vinta/pangu.js)风格爱好者的福利吧？）
 
--`/群话痨排行榜` ————看看有史以来（机器人存在以来）群友们发了多少消息！
+### 🎨一般用法
 
--`/今日群话痨排行榜` ————看看今天的群友发了多少消息！
+-`/B话榜` ————看看有史以来（机器人存在以来）群友们发了多少消息！ (好像没写)
 
--`/昨日群话痨排行榜` ————看看昨天的群友发了多少消息！
+-`/今日B话榜` ————看看今天的群友发了多少消息！
 
--`/前日群话痨排行榜` ————看看前天的群友发了多少消息！
+-`/昨日B话榜` ————看看昨天的群友发了多少消息！
 
--`/本周群话痨排行榜` ————看看本周的群友发了多少消息！
+-`/前日B话榜` ————看看前天的群友发了多少消息！
+
+-`/本周B话榜` ————看看本周的群友发了多少消息！
   
--`/上周群话痨排行榜` ————看看上周的群友发了多少消息！
+-`/上周B话榜` ————看看上周的群友发了多少消息！
 
--`/本月群话痨排行榜` ————看看这个月的群友发了多少消息！
+-`/本月B话榜` ————看看这个月的群友发了多少消息！
 
--`/年度群话痨排行榜` ————看看今年的群友发了多少消息！
+-`/年度B话榜` ————看看今年的群友发了多少消息！
 
--`/历史群话痨排行榜` ————看看历史上（机器人存在以来）的群友发了多少消息！
+-`/历史B话榜` ————看看历史上（机器人存在以来）的群友发了多少消息！
 
-  
+### 🚀进阶用法
+
+`/{时间类型(今日|年度)?}{B话榜|废话榜} {时间类型?} {ISO8601格式时间} {群号}`
+
+如：`/B话榜 历史 2024-01-01~2024-01-02 12345678`
+
+
 ## 📖版本
   
 ### V1.0
@@ -105,15 +111,36 @@ __！！注意！！__
 
   - 理论支持全平台！暂停图片支持。
 
-## 💧另外
+## 💪 目前支持的平台
 
-### 感谢
+| 平台 | 是否经过测试 | 是否能够正常工作 | 测试环境 |
+|:-----:|:----:|:----:| :----: |
+| Onebot | ✅ | ✅ | NapCat + Window11|
+| 飞书  | ❌ | ❓ | 🤔 |
+| Red  | ❌ | ❓ | 🤔 |
+| DoDo  | ❌ | ❓ | 🤔 |
+| Mirai  | ❌ | ❓ | 🤔 |
+| 开黑啦  | ❌ | ❓ | 🤔 |
+| Kritor  | ❌ | ❓ | 🤔 |
+| Ntchat  | ❌ | ❓ | 🤔 |
+| Satori  | ❌ | ❓ | 🤔 |
+| Telegram | ❌ | ❓ | 🤔  |
+| Discord  | ❌ | ❓ | 🤔 |
+| Tailchat  | ❌ | ❓ | 🤔 |
+| QQ 官方接口  | ❌ | ❓ | 🤔 |
+| Rocket.Chat  | ❌ | ❓ | 🤔 |
+
+- 如果你测试过能够使用，请在 Issue 中指出
+
+## 📦另外
+
+### 💕感谢
 
 本插件的__init__.py 中的处理函数参考了词云中的方法 ~~（其实大部分都是 Ctrl+C Ctr+V）~~
 
 [nonebot-plugin-wordcloud](https://github.com/he0119/nonebot-plugin-wordcloud)
   
-## TODO
+### 🎀TODO
 
 - [x] 适配全平台
 
@@ -125,5 +152,5 @@ __！！注意！！__
   
  待补充。.....
 
-## 题外话
+### 👾题外话
 ~~整个项目快被我写成屎山了~~
