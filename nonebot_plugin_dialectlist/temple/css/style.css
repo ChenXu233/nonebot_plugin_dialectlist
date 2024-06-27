@@ -1,0 +1,117 @@
+body {
+    background-image: url('../img/background.jpg');
+    background-attachment: scroll;
+    margin: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.container {
+    padding: 20px 40px;
+    position: relative;
+    flex-direction: column;
+    display: flex;
+}
+
+.card {
+    border: 5px solid rgba(200, 200, 200, 1);
+    text-align: center; /*设置文本水平居中*/
+    align-content: center;
+    margin: 1% 1% 1% 1%;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, .2);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.card2 {
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-direction: revert;
+    display: flex;
+    border: 5px solid rgba(200, 200, 200, 1);
+    text-align: center; /*设置文本水平居中*/
+    align-content: center;
+    margin: 1% 1% 1% 1%;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, .2);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+.center_text {
+    text-align: center;
+    font-size: 300%;
+    font-weight: bolder;
+}
+
+.center_text2 {
+    text-align: center;
+    font-size: 150%;
+}
+
+.rank_container {
+    flex-direction: column;
+    display: flex;
+    border: 5px solid rgba(200, 200, 200, 1);
+    border-radius: 2rem;
+    padding: 10px 20px;
+    margin: 1% 1% 1% 1%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(243, 243, 240, 0.6);
+}
+
+.rank_card {
+    display: flex;
+    width: 90%;
+    flex-direction: row;
+    border: 3px solid rgba(255, 255, 255, 0.61);
+    margin: 20px 10px;
+    border-radius: 2rem;
+    /* padding: 20px 40px; */
+    align-content: center;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+}
+
+.profile{
+    width: 20%;
+    height: 20%;
+    border: 3px solid rgba(255, 255, 255, 0.61);
+    border-radius: 2000px;
+    background-size: cover;
+    margin-right: 20px;
+}
+
+.profile2{
+    width: 4%;
+    height: 4%;
+    border: 3px solid rgba(255, 255, 255, 0.61);
+    border-radius: 2000px;
+    background-size: cover;
+    margin-right: 20px;
+}
+
+.rank_card_info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.g-container {
+    width: 90%;
+    height: 25px;
+    border-radius: 25px;
+    background: #ffb2b25d;
+}
+
+.g-progress {
+    width: 50%;
+    height: inherit;
+    border-radius: 25px 20px 20px 25px;
+    background: linear-gradient(90deg,rgb(57, 230, 230), rgb(21, 161, 248));
+}
