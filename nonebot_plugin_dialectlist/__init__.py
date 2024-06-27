@@ -56,7 +56,7 @@ from .utils import (
     got_rank,
     msg_counter,
     persist_id2user_id,
-    parse_datetime
+    parse_datetime,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -81,18 +81,20 @@ class SameTime(ArparmaBehavior):
         if type is None and time:
             interface.behave_fail()
 
+
 def wrapper(slot: Union[int, str], content: Optional[str]) -> str:
     if slot == "type" and content:
         return content
     return ""  # pragma: no cover
 
+
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
         Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
-            "time?", str,
-            "group_id?", int
-        ],
+            "time?",
+            str,
+        ]["group_id?", str],
         behaviors=[SameTime()],
     ),
     aliases={"废话榜"},
@@ -110,6 +112,7 @@ rank_cmd.shortcut(
     },
 )
 
+
 # 这段函数完全抄的词云
 @rank_cmd.handle()
 async def _group_message(
@@ -117,13 +120,15 @@ async def _group_message(
     session: Session = Depends(extract_session),
     type: Optional[str] = None,
     time: Optional[str] = None,
-    group_id: Optional[int] = None,
+    group_id: Optional[str] = None,
 ):
 
     dt = get_datetime_now_with_timezone()
 
-    if not group_id:
-        state["group_id"] = session.id2
+    if group_id is None:
+        group_id = session.id2
+
+    state["group_id"] = group_id
 
     if not type:
         await rank_cmd.finish(__plugin_meta__.usage)
@@ -191,15 +196,25 @@ async def _group_message(
     prompt="请输入你要查询的结束日期（如 2022-02-22）",
     parameterless=[Depends(parse_datetime("stop"))],
 )
+@rank_cmd.got("group_id", prompt="请输入你要查询的群号。")
 async def handle_rank(
     bot: Bot,
     event: Event,
     session: Session = Depends(extract_session),
     start: datetime = Arg(),
     stop: datetime = Arg(),
+    group_id: str = Arg(),
 ):
+    if group_id:
+        id = group_id
+    else:
+        id = session.id2
+
+    if not id:
+        await saa.Text("没有指定群哦").finish()
+
     messages = await get_message_records(
-        session=session,
+        id2s=[id],
         id_type=SessionIdType.GROUP,
         include_bot_id=False,
         include_bot_type=False,
@@ -240,10 +255,10 @@ async def handle_rank(
 
     bar = Bar(init_opts=opts.InitOpts(theme=ThemeType.LIGHT))
     bar.add_xaxis(nicknames)
-    bar.add_yaxis("B话数量", [i[1] for i in rank]) # type: ignore
-    bar.render(str(get_cache_file("nonebot_plugin_dialectlist","cache.html")))
-    with open(get_cache_file("nonebot_plugin_dialectlist","cache.html")) as f:
+    bar.add_yaxis("B话数量", [i[1] for i in rank])  # type: ignore
+    bar.render(str(get_cache_file("nonebot_plugin_dialectlist", "cache.html")))
+    with open(get_cache_file("nonebot_plugin_dialectlist", "cache.html")) as f:
         a = f.read()
-    image = await html_to_pic(a,device_scale_factor=3.2)
+    image = await html_to_pic(a, device_scale_factor=3.2)
 
-    await (saa.Text(string)+saa.Image(image)).finish(reply=True)
+    await (saa.Text(string) + saa.Image(image)).finish(reply=True)
