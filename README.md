@@ -9,6 +9,18 @@
 # 📃话痨排行榜
 nonebot-plugin-dialectlist
 
+<p align="center">
+  <a href="https://pypi.python.org/pypi/nonebot-plugin-wordcloud">
+    <img src="https://img.shields.io/pypi/v/nonebot-plugin-wordcloud.svg" alt="pypi">
+  </a>
+  
+  <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
+  
+  <a href="https://qm.qq.com/q/Yty2yc9Bee">
+    <img src="https://img.shields.io/badge/QQ%E7%BE%A4-1128359833-orange?style=flat-square" alt="QQ Chat Group">
+  </a>
+</p>
+
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
 
@@ -133,6 +145,17 @@ __！！注意！！__
 - 如果你测试过能够使用，请在 Issue 中指出
 
 ## 📦另外
+
+### 😳加入作者的 BUG 反馈群 ~~（🥵女装粉丝群）~~
+
+[群连接](https://qm.qq.com/q/Yty2yc9Bee)
+
+<details>
+<summary>群二维码 点我展开</summary>
+
+![7a4bd22dea47d25d9b632d4b2696d4cd](https://github.com/ChenXu233/nonebot_plugin_dialectlist/assets/91937041/61fd7010-e2b2-4f13-b209-9c0faf8a517f)
+
+</details>
 
 ### 💕感谢
 
