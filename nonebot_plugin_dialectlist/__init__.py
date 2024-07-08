@@ -8,11 +8,8 @@ require("nonebot_plugin_alconna")
 require("nonebot_plugin_cesaa")
 
 import re
+import os
 import nonebot_plugin_saa as saa
-
-from pyecharts.charts import Bar
-from pyecharts import options as opts
-from pyecharts.globals import ThemeType
 
 from typing import Union, Optional, List
 from datetime import datetime, timedelta
@@ -50,13 +47,13 @@ from nonebot_plugin_session import Session, SessionIdType, extract_session
 # from .function import *
 from .config import Config, plugin_config
 from .usage import __usage__
+from .time import get_datetime_fromisoformat_with_timezone, get_datetime_now_with_timezone,parse_datetime
+from .model import UserRankInfo
 from .utils import (
-    get_datetime_fromisoformat_with_timezone,
-    get_datetime_now_with_timezone,
     got_rank,
     msg_counter,
     persist_id2user_id,
-    parse_datetime,
+    get_rank_image
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -92,9 +89,9 @@ rank_cmd = on_alconna(
     Alconna(
         "B话榜",
         Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
-            "time?",
-            str,
-        ]["group_id?", str],
+            "time?",str,][
+            "group_id?", str
+        ],
         behaviors=[SameTime()],
     ),
     aliases={"废话榜"},
@@ -223,42 +220,45 @@ async def handle_rank(
         time_stop=stop,
         exclude_id1s=plugin_config.excluded_people,
     )
-
     rank = got_rank(msg_counter(messages))
+    rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
     for i in range(len(rank)):
         rank[i][0] = str(ids[i])
+        logger.debug(rank[i])
 
-    string: str = ""
-    nicknames: List = []
+    total = sum([i[1] for i in rank])
+
     for i in rank:
         if user_info := await get_user_info(bot, event, user_id=str(i[0])):
-            (
-                nicknames.append(user_info.user_displayname)
-                if user_info.user_displayname
-                else (
-                    nicknames.append(user_info.user_name)
-                    if user_info.user_name
-                    else nicknames.append(user_info.user_id)
-                )
+            user_nickname = user_info.user_displayname\
+                                if user_info.user_displayname\
+                                else user_info.user_name\
+                                    if user_info.user_name\
+                                    else\
+                                        user_info.user_id
+            user_avatar = await user_info.user_avatar.get_image()\
+                            if user_info.user_avatar\
+                            else open(os.path.dirname(os.path.abspath(__file__))+"/template/avatar/default.jpg", "rb").read()
+            user = UserRankInfo(**user_info.model_dump(),
+                                user_bnum=i[1],
+                                user_proportion= round(i[1] / total * 100, 2),
+                                user_index= rank.index(i) + 1,
+                                user_nickname=user_nickname,
+                                user_avatar_bytes= user_avatar,
             )
-        else:
-            nicknames.append(None)
-    logger.debug(nicknames)
+            user.user_gender="她" if user_info.user_gender == "female" else "他" if user_info.user_gender == "male" else "ta"
+            rank2.append(user)
+            
+    string: str = ""
     for i in range(len(rank)):
-        index = i + 1
-        nickname, chatdatanum = nicknames[i], rank[i][1]
         str_example = plugin_config.string_format.format(
-            index=index, nickname=nickname, chatdatanum=chatdatanum
+            index=rank2[i].user_index, 
+            nickname=rank2[i].user_nickname, 
+            chatdatanum=rank2[i].user_bnum
         )
         string += str_example
-
-    bar = Bar(init_opts=opts.InitOpts(theme=ThemeType.LIGHT))
-    bar.add_xaxis(nicknames)
-    bar.add_yaxis("B话数量", [i[1] for i in rank])  # type: ignore
-    bar.render(str(get_cache_file("nonebot_plugin_dialectlist", "cache.html")))
-    with open(get_cache_file("nonebot_plugin_dialectlist", "cache.html")) as f:
-        a = f.read()
-    image = await html_to_pic(a, device_scale_factor=3.2)
+    
+    image = await get_rank_image(rank2)
 
     await (saa.Text(string) + saa.Image(image)).finish(reply=True)

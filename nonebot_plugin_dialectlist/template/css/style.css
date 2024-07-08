@@ -1,10 +1,11 @@
 body {
-    background-image: url('../img/background.jpg');
+    background-image: url('https://image.anosu.top/pixiv/direct?size=regular');
     background-attachment: scroll;
     margin: 0;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    width: 1024;
 }
 
 .container {
@@ -74,8 +75,8 @@ body {
     border-radius: 2rem;
     /* padding: 20px 40px; */
     align-content: center;
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .profile{
@@ -88,8 +89,8 @@ body {
 }
 
 .profile2{
-    width: 4%;
-    height: 4%;
+    width: 8%;
+    height: 8%;
     border: 3px solid rgba(255, 255, 255, 0.61);
     border-radius: 2000px;
     background-size: cover;

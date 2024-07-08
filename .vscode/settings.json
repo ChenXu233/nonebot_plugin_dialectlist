@@ -4,6 +4,7 @@
         "apscheduler",
         "arclet",
         "Arparma",
+        "bnum",
         "cesaa",
         "chatdatanum",
         "chatrecorder",
@@ -15,6 +16,7 @@
         "pygal",
         "sqlalchemy",
         "userinfo",
+        "whereclause",
         "xaxis",
         "yaxis"
     ]

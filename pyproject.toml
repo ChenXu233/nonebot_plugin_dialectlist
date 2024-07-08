@@ -1,7 +1,7 @@
 [project]
 name = "nonebot_plugin_dialectlist"
-version = "2.0.4"
-description = "Default template for PDM package"
+version = "2.1.4"
+description = "看看你群群友有多能说"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
 ]
@@ -27,6 +27,7 @@ dev = [
     "ruff>=0.4.9",
     "setuptools>=70.0.0",
     "twine>=5.1.0",
+    "nb-cli>=0.7.6"
 ]
 
 [tool.pdm]

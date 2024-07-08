@@ -9,6 +9,7 @@ class ScopedConfig(BaseModel):
     timezone: Optional[str] = "Asia/Shanghai"
     excluded_self: bool = True
     string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
+    template_path: str = "./template/rank_template.j2"  # 模板路径
     visualization: bool = True  # 是否可视化
     excluded_people: List[str] = []  # 排除的人的QQ号
     visualization_type: Literal["饼图", "圆环图", "柱状图"] = "圆环图"  # 可视化方案
