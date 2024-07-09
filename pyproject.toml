@@ -1,5 +1,5 @@
 [project]
-name = "nonebot_plugin_dialectlist"
+name = "nonebot-plugin-dialectlist"
 version = "2.1.6"
 description = "看看你群群友有多能说"
 authors = [
