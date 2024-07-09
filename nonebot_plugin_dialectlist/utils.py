@@ -148,4 +148,9 @@ async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
         
     path_dir, filename = os.path.split(path)
     logger.debug(os.path.dirname(os.path.abspath(__file__)) + plugin_config.template_path[1:])
-    return await template_to_pic(path_dir,filename,{'users': rank, 'cache_path': cache_path, 'file_path': os.path.dirname(os.path.abspath(__file__))})
+    return await template_to_pic(path_dir,
+                                 filename,
+                                 {'users': rank,
+                                           'cache_path': cache_path,
+                                           'file_path': os.path.dirname(os.path.abspath(__file__))},
+                                 pages={"viewport": {"width": 1366, "height": 10}})
