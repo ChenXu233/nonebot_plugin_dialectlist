@@ -231,6 +231,7 @@ async def handle_rank(
 
     for i in rank:
         if user_info := await get_user_info(bot, event, user_id=str(i[0])):
+            logger.debug(user_info)
             user_nickname = user_info.user_displayname\
                                 if user_info.user_displayname\
                                 else user_info.user_name\
