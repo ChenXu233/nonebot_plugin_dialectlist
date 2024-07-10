@@ -29,6 +29,7 @@ from nonebot_plugin_alconna import (
     AlconnaMatch,
     AlconnaMatcher,
     AlconnaQuery,
+    Option,
     Args,
     Match,
     Option,
@@ -79,23 +80,22 @@ class SameTime(ArparmaBehavior):
             interface.behave_fail()
 
 
-def wrapper(slot: Union[int, str], content: Optional[str]) -> str:
+def wrapper(slot: Union[int, str], content: Optional[str],context) -> str:
     if slot == "type" and content:
         return content
     return ""  # pragma: no cover
-
 
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
         Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
-            "time?",str,][
-            "group_id?", str
-        ],
+            "time?",str,],
+        Option("-g|--group_id",Args["group_id?", str]),
         behaviors=[SameTime()],
     ),
     aliases={"废话榜"},
     use_cmd_start=True,
+    block=True,
 )
 
 
@@ -103,7 +103,16 @@ rank_cmd.shortcut(
     r"(?P<type>今日|昨日|本周|上周|本月|上月|年度|历史)B话榜",
     {
         "prefix": True,
-        "command": "B话榜 ",
+        "command": "B话榜",
+        "wrapper": wrapper,
+        "args": ["{type}"],
+    },
+)
+rank_cmd.shortcut(
+    r"(?P<type>今日|昨日|本周|上周|本月|上月|年度|历史)废话榜",
+    {
+        "prefix": True,
+        "command": "废话榜",
         "wrapper": wrapper,
         "args": ["{type}"],
     },
@@ -122,10 +131,11 @@ async def _group_message(
 
     dt = get_datetime_now_with_timezone()
 
-    if group_id is None:
+    if not group_id:
         group_id = session.id2
-
-    state["group_id"] = group_id
+        logger.debug(f"session id2: {group_id}")
+    if group_id:
+        state["group_id"] = group_id
 
     if not type:
         await rank_cmd.finish(__plugin_meta__.usage)
@@ -193,7 +203,10 @@ async def _group_message(
     prompt="请输入你要查询的结束日期（如 2022-02-22）",
     parameterless=[Depends(parse_datetime("stop"))],
 )
-@rank_cmd.got("group_id", prompt="请输入你要查询的群号。")
+@rank_cmd.got(
+    "group_id",
+    prompt="请输入你要查询的群号。"
+)
 async def handle_rank(
     bot: Bot,
     event: Event,
@@ -204,6 +217,7 @@ async def handle_rank(
 ):
     if group_id:
         id = group_id
+        logger.debug(f"group_id: {id}")
     else:
         id = session.id2
 
@@ -220,6 +234,10 @@ async def handle_rank(
         time_stop=stop,
         exclude_id1s=plugin_config.excluded_people,
     )
+    
+    if not messages:
+        await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
+        
     rank = got_rank(msg_counter(messages))
     rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
