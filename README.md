@@ -10,8 +10,8 @@
 nonebot-plugin-dialectlist
 
 <p align="center">
-  <a href="https://pypi.python.org/pypi/nonebot-plugin-wordcloud">
-    <img src="https://img.shields.io/pypi/v/nonebot-plugin-wordcloud.svg" alt="pypi">
+  <a href="https://pypi.python.org/pypi/nonebot-plugin-dialectlist">
+    <img src="https://img.shields.io/pypi/v/nonebot-plugin-dialectlist.svg" alt="pypi">
   </a>
   
   <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
@@ -55,8 +55,8 @@ dialectlist__string_suffix_format = '你们的职业是水群吗？————M
 dialectlist__get_num = 10 #获取人数数量
 dialectlist__visualization = True #是否可视化
 dialectlist__visualization_type = '圆环图' #可视化方案
-dialectlist__font = 'SimHei'#字体格式
-dialectlist__excluded_people = []#排除的人的 QQ 号（或频道号？（未经测试）)
+dialectlist__font = 'SimHei' #字体格式
+dialectlist__excluded_people = [] #排除的人的 QQ 号（或频道号？（未经测试）)
 dialectlist__excluded_self = True #是否排除机器人自己 QQ
 ```
 💭也可以不进行配置，这将会使插件按照默认配置运行
