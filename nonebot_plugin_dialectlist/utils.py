@@ -57,17 +57,38 @@ async def persist_id2user_id(ids: List) -> List[str]:
     return [i.id1 for i in records]
 
 
-async def user_id2persist_id(id: str) -> int:
+async def user_id2persist_id(ids: List[str]) -> List[int]:
     whereclause: List[ColumnElement[bool]] = []
-    whereclause.append(or_(*[SessionModel.id2 == id]))
+    whereclause.append(or_(*[SessionModel.id1 == id for id in ids]))
     statement = (
         select(SessionModel).where(*whereclause)
         # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
     )
     async with get_session() as db_session:
         records = (await db_session.scalars(statement)).all()
-    return records[0].id
+    return [i.id for i in records]
 
+async def group_id2persist_id(ids: List[str]) -> List[int]:
+    whereclause: List[ColumnElement[bool]] = []
+    whereclause.append(or_(*[SessionModel.id2 == id for id in ids]))
+    statement = (
+        select(SessionModel).where(*whereclause)
+        # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
+    )
+    async with get_session() as db_session:
+        records = (await db_session.scalars(statement)).all()
+    return [i.id for i in records]
+
+async def persist_id2group_id(ids: List[str]) -> List[str]:
+    whereclause: List[ColumnElement[bool]] = []
+    whereclause.append(or_(*[SessionModel.id == id for id in ids]))
+    statement = (
+        select(SessionModel).where(*whereclause)
+        # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
+    )
+    async with get_session() as db_session:
+        records = (await db_session.scalars(statement)).all()
+    return [i.id2 for i in records]
 
 def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
     """### 计算每个人的消息量
