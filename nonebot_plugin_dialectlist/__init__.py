@@ -9,6 +9,7 @@ require("nonebot_plugin_cesaa")
 
 import re
 import os
+import cn2an
 import nonebot_plugin_saa as saa
 
 from typing import Union, Optional, List
@@ -243,6 +244,7 @@ async def handle_rank(
         await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
         
     rank = got_rank(msg_counter(messages))
+    logger.debug(rank)
     rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
     for i in range(len(rank)):
@@ -250,7 +252,7 @@ async def handle_rank(
         logger.debug(rank[i])
 
     total = sum([i[1] for i in rank])
-
+    index = 1
     for i in rank:
         if user_info := await get_user_info(bot, event, user_id=str(i[0])):
             logger.debug(user_info)
@@ -266,15 +268,18 @@ async def handle_rank(
             user = UserRankInfo(**model_dump(user_info),
                                 user_bnum=i[1],
                                 user_proportion= round(i[1] / total * 100, 2),
-                                user_index= rank.index(i) + 1,
-                                user_nickname=user_nickname,
+                                user_index= cn2an.an2cn(index),
+                                user_nickname= user_nickname,
                                 user_avatar_bytes= user_avatar,
             )
             user.user_gender="她" if user_info.user_gender == "female" else "他" if user_info.user_gender == "male" else "ta"
             rank2.append(user)
+            index += 1
             
     string: str = ""
-    for i in range(len(rank)):
+    for i in rank2:
+        logger.debug(i.user_name)
+    for i in range(len(rank2)):
         str_example = plugin_config.string_format.format(
             index=rank2[i].user_index, 
             nickname=rank2[i].user_nickname, 
