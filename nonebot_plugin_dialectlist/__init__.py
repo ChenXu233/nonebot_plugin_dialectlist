@@ -10,6 +10,7 @@ require("nonebot_plugin_cesaa")
 import re
 import os
 import cn2an
+import time as t
 import nonebot_plugin_saa as saa
 
 from typing import Union, Optional, List
@@ -137,7 +138,8 @@ async def _group_message(
     time: Optional[str] = None,
     group_id: Optional[str] = None,
 ):
-
+    t1 = t.time()
+    state["t1"] = t1
     dt = get_datetime_now_with_timezone()
 
     if not group_id:
@@ -298,7 +300,16 @@ async def handle_rank(
             chatdatanum=rank2[i].user_bnum,
         )
         string += str_example
-
-    image = await get_rank_image(rank2)
-
-    await (saa.Text(string) + saa.Image(image)).finish(reply=True)
+    
+    msg = saa.Text(string)
+    
+    if plugin_config.visualization:
+        image = await get_rank_image(rank2)
+        msg += saa.Image(image)
+    
+    if plugin_config.suffix:
+        timecost = t.time() - state["t1"]
+        suffix = saa.Text(plugin_config.string_suffix.format(timecost=timecost))
+        msg += suffix
+        
+    await msg.finish(reply=True)
