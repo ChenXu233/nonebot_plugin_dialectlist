@@ -16,7 +16,7 @@ from nonebot_plugin_orm import get_session
 from nonebot_plugin_session import Session, SessionLevel, extract_session
 from nonebot_plugin_session_orm import SessionModel
 from nonebot_plugin_userinfo import EventUserInfo, UserInfo
-from nonebot_plugin_htmlrender import html_to_pic,template_to_pic
+from nonebot_plugin_htmlrender import html_to_pic, template_to_pic
 from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_chatrecorder import MessageRecord
 from nonebot_plugin_localstore import get_cache_dir
@@ -49,7 +49,7 @@ async def persist_id2user_id(ids: List) -> List[str]:
     user_ids = []
     async with get_session() as db_session:
         for i in ids:
-            user_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id == i])))).id1 # type: ignore
+            user_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id == i])))).id1  # type: ignore
             user_ids.append(user_id)
     return user_ids
 
@@ -65,6 +65,7 @@ async def user_id2persist_id(ids: List[str]) -> List[int]:
         records = (await db_session.scalars(statement)).all()
     return [i.id for i in records]
 
+
 async def group_id2persist_id(ids: List[str]) -> List[int]:
     whereclause: List[ColumnElement[bool]] = []
     whereclause.append(or_(*[SessionModel.id2 == id for id in ids]))
@@ -76,6 +77,7 @@ async def group_id2persist_id(ids: List[str]) -> List[int]:
         records = (await db_session.scalars(statement)).all()
     return [i.id for i in records]
 
+
 async def persist_id2group_id(ids: List[str]) -> List[str]:
     whereclause: List[ColumnElement[bool]] = []
     whereclause.append(or_(*[SessionModel.id == id for id in ids]))
@@ -86,6 +88,7 @@ async def persist_id2group_id(ids: List[str]) -> List[str]:
     async with get_session() as db_session:
         records = (await db_session.scalars(statement)).all()
     return [i.id2 for i in records]
+
 
 def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
     """### 计算每个人的消息量
@@ -137,6 +140,7 @@ def got_rank(msg_dict: Dict[str, int]) -> List:
 
     return rank
 
+
 def remove_control_characters(string: str) -> str:
     """### 将字符串中的控制符去除
 
@@ -148,27 +152,40 @@ def remove_control_characters(string: str) -> str:
     """
     return "".join(ch for ch in string if unicodedata.category(ch)[0] != "C")
 
+
 async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
     for i in rank:
         if i.user_avatar:
             try:
                 user_avatar = i.user_avatar_bytes
             except NotImplementedError:
-                user_avatar = open(os.path.dirname(os.path.abspath(__file__))+"/template/avatar/default.jpg", "rb").read()
+                user_avatar = open(
+                    os.path.dirname(os.path.abspath(__file__))
+                    + "/template/avatar/default.jpg",
+                    "rb",
+                ).read()
             # if not os.path.exists(cache_path / str(i.user_id)):
             with open(cache_path / (str(i.user_id) + ".jpg"), "wb") as f:
                 f.write(user_avatar)
-                
-    if plugin_config.template_path[:2] == './':
-        path = os.path.dirname(os.path.abspath(__file__)) + plugin_config.template_path[1:]
+
+    if plugin_config.template_path[:2] == "./":
+        path = (
+            os.path.dirname(os.path.abspath(__file__)) + plugin_config.template_path[1:]
+        )
     else:
         path = plugin_config.template_path
-        
+
     path_dir, filename = os.path.split(path)
-    logger.debug(os.path.dirname(os.path.abspath(__file__)) + plugin_config.template_path[1:])
-    return await template_to_pic(path_dir,
-                                 filename,
-                                 {'users': rank,
-                                           'cache_path': cache_path,
-                                           'file_path': os.path.dirname(os.path.abspath(__file__))},
-                                 pages={"viewport": {"width": 1366, "height": 10}})
+    logger.debug(
+        os.path.dirname(os.path.abspath(__file__)) + plugin_config.template_path[1:]
+    )
+    return await template_to_pic(
+        path_dir,
+        filename,
+        {
+            "users": rank,
+            "cache_path": cache_path,
+            "file_path": os.path.dirname(os.path.abspath(__file__)),
+        },
+        pages={"viewport": {"width": 1200, "height": 10}},
+    )

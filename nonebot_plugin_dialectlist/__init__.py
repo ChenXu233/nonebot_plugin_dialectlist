@@ -50,14 +50,18 @@ from nonebot_plugin_session import Session, SessionIdType, extract_session
 # from .function import *
 from .config import Config, plugin_config
 from .usage import __usage__
-from .time import get_datetime_fromisoformat_with_timezone, get_datetime_now_with_timezone,parse_datetime
+from .time import (
+    get_datetime_fromisoformat_with_timezone,
+    get_datetime_now_with_timezone,
+    parse_datetime,
+)
 from .model import UserRankInfo
 from .utils import (
     got_rank,
     msg_counter,
     persist_id2user_id,
     user_id2persist_id,
-    get_rank_image
+    get_rank_image,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -83,17 +87,20 @@ class SameTime(ArparmaBehavior):
             interface.behave_fail()
 
 
-def wrapper(slot: Union[int, str], content: Optional[str],context) -> str:
+def wrapper(slot: Union[int, str], content: Optional[str], context) -> str:
     if slot == "type" and content:
         return content
     return ""  # pragma: no cover
+
 
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
         Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
-            "time?",str,],
-        Option("-g|--group_id",Args["group_id?", str]),
+            "time?",
+            str,
+        ],
+        Option("-g|--group_id", Args["group_id?", str]),
         behaviors=[SameTime()],
     ),
     aliases={"废话榜"},
@@ -206,10 +213,7 @@ async def _group_message(
     prompt="请输入你要查询的结束日期（如 2022-02-22）",
     parameterless=[Depends(parse_datetime("stop"))],
 )
-@rank_cmd.got(
-    "group_id",
-    prompt="请输入你要查询的群号。"
-)
+@rank_cmd.got("group_id", prompt="请输入你要查询的群号。")
 async def handle_rank(
     state: T_State,
     bot: Bot,
@@ -239,10 +243,10 @@ async def handle_rank(
         time_stop=stop,
         exclude_id1s=plugin_config.excluded_people,
     )
-    
+
     if not messages:
         await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
-        
+
     rank = got_rank(msg_counter(messages))
     logger.debug(rank)
     rank2: List[UserRankInfo] = []
@@ -256,37 +260,47 @@ async def handle_rank(
     for i in rank:
         if user_info := await get_user_info(bot, event, user_id=str(i[0])):
             logger.debug(user_info)
-            user_nickname = user_info.user_displayname\
-                                if user_info.user_displayname\
-                                else user_info.user_name\
-                                    if user_info.user_name\
-                                    else\
-                                        user_info.user_id
-            user_avatar = await user_info.user_avatar.get_image()\
-                            if user_info.user_avatar\
-                            else open(os.path.dirname(os.path.abspath(__file__))+"/template/avatar/default.jpg", "rb").read()
-            user = UserRankInfo(**model_dump(user_info),
-                                user_bnum=i[1],
-                                user_proportion= round(i[1] / total * 100, 2),
-                                user_index= cn2an.an2cn(index),
-                                user_nickname= user_nickname,
-                                user_avatar_bytes= user_avatar,
+            user_nickname = (
+                user_info.user_displayname
+                if user_info.user_displayname
+                else user_info.user_name if user_info.user_name else user_info.user_id
             )
-            user.user_gender="她" if user_info.user_gender == "female" else "他" if user_info.user_gender == "male" else "ta"
+            user_avatar = (
+                await user_info.user_avatar.get_image()
+                if user_info.user_avatar
+                else open(
+                    os.path.dirname(os.path.abspath(__file__))
+                    + "/template/avatar/default.jpg",
+                    "rb",
+                ).read()
+            )
+            user = UserRankInfo(
+                **model_dump(user_info),
+                user_bnum=i[1],
+                user_proportion=round(i[1] / total * 100, 2),
+                user_index=cn2an.an2cn(index),
+                user_nickname=user_nickname,
+                user_avatar_bytes=user_avatar,
+            )
+            user.user_gender = (
+                "她"
+                if user_info.user_gender == "female"
+                else "他" if user_info.user_gender == "male" else "ta"
+            )
             rank2.append(user)
             index += 1
-            
+
     string: str = ""
     for i in rank2:
         logger.debug(i.user_name)
     for i in range(len(rank2)):
         str_example = plugin_config.string_format.format(
-            index=rank2[i].user_index, 
-            nickname=rank2[i].user_nickname, 
-            chatdatanum=rank2[i].user_bnum
+            index=rank2[i].user_index,
+            nickname=rank2[i].user_nickname,
+            chatdatanum=rank2[i].user_bnum,
         )
         string += str_example
-    
+
     image = await get_rank_image(rank2)
 
     await (saa.Text(string) + saa.Image(image)).finish(reply=True)
