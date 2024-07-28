@@ -67,15 +67,12 @@ async def user_id2persist_id(ids: List[str]) -> List[int]:
 
 
 async def group_id2persist_id(ids: List[str]) -> List[int]:
-    whereclause: List[ColumnElement[bool]] = []
-    whereclause.append(or_(*[SessionModel.id2 == id for id in ids]))
-    statement = (
-        select(SessionModel).where(*whereclause)
-        # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
-    )
+    persist_ids = []
     async with get_session() as db_session:
-        records = (await db_session.scalars(statement)).all()
-    return [i.id for i in records]
+        for i in ids:
+            persist_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id2 == i])))).id  # type: ignore
+            persist_ids.append(persist_id)
+    return persist_ids
 
 
 async def persist_id2group_id(ids: List[str]) -> List[str]:

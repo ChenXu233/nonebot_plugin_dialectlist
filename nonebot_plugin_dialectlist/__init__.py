@@ -41,8 +41,6 @@ from nonebot_plugin_alconna import (
 )
 
 from nonebot_plugin_chatrecorder import get_message_records
-from nonebot_plugin_localstore import get_cache_file
-from nonebot_plugin_htmlrender import html_to_pic
 from nonebot_plugin_userinfo import get_user_info
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
@@ -61,6 +59,7 @@ from .utils import (
     msg_counter,
     persist_id2user_id,
     user_id2persist_id,
+    group_id2persist_id,
     get_rank_image,
 )
 
@@ -221,10 +220,9 @@ async def handle_rank(
     session: Session = Depends(extract_session),
     start: datetime = Arg(),
     stop: datetime = Arg(),
-    # group_id: str = Arg(),
 ):
     if id := state["group_id"]:
-        # id = await user_id2persist_id(id)
+        id = str(id)
         logger.debug(f"group_id: {id}")
     else:
         id = session.id2
