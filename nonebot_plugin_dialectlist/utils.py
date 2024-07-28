@@ -187,5 +187,5 @@ async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
             "cache_path": cache_path,
             "file_path": os.path.dirname(os.path.abspath(__file__)),
         },
-        pages={"viewport": {"width": 1200, "height": 10}},
+        pages={"viewport": {"width": 1100, "height": 10}},
     )
