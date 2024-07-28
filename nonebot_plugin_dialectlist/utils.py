@@ -46,15 +46,12 @@ async def ensure_group(matcher: Matcher, session: Session = Depends(extract_sess
 
 
 async def persist_id2user_id(ids: List) -> List[str]:
-    whereclause: List[ColumnElement[bool]] = []
-    whereclause.append(or_(*[SessionModel.id == id for id in ids]))
-    statement = (
-        select(SessionModel).where(*whereclause)
-        # .join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
-    )
+    user_ids = []
     async with get_session() as db_session:
-        records = (await db_session.scalars(statement)).all()
-    return [i.id1 for i in records]
+        for i in ids:
+            user_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id == i])))).id1 # type: ignore
+            user_ids.append(user_id)
+    return user_ids
 
 
 async def user_id2persist_id(ids: List[str]) -> List[int]:
