@@ -1,6 +1,6 @@
-from typing import Optional, Literal, List, Union
-from pydantic import BaseModel
-from nonebot_plugin_userinfo import get_user_info, UserInfo
+from typing import Union
+from nonebot_plugin_orm import Model
+from nonebot_plugin_userinfo import UserInfo
 
 
 class UserRankInfo(UserInfo):
@@ -9,3 +9,7 @@ class UserRankInfo(UserInfo):
     user_nickname: str
     user_index: Union[int, str]
     user_avatar_bytes: bytes
+
+
+class MsgData(Model):
+    __table_args__ = {"extend_existing": True}

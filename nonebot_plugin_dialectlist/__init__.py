@@ -19,30 +19,22 @@ from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
 
 from nonebot.log import logger
-from nonebot.params import Arg, Depends
 from nonebot.typing import T_State
 from nonebot.compat import model_dump
-from nonebot.adapters import Bot, Event, Message
 from nonebot.params import Arg, Depends
+from nonebot.adapters import Bot, Event
 from nonebot.permission import SUPERUSER
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
-from nonebot.typing import T_State
 from nonebot_plugin_alconna import (
-    Alconna,
-    AlconnaMatch,
-    AlconnaMatcher,
-    AlconnaQuery,
-    Option,
     Args,
-    Match,
     Option,
-    Query,
-    image_fetch,
+    Alconna,
     on_alconna,
 )
 
-from nonebot_plugin_chatrecorder import get_message_records
+from nonebot_plugin_apscheduler import scheduler
 from nonebot_plugin_userinfo import get_user_info
+from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
 # from . import migrations #抄词云的部分代码，还不知道这有什么用
@@ -58,10 +50,8 @@ from .model import UserRankInfo
 from .utils import (
     got_rank,
     msg_counter,
-    persist_id2user_id,
-    user_id2persist_id,
-    group_id2persist_id,
     get_rank_image,
+    persist_id2user_id,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -300,16 +290,23 @@ async def handle_rank(
             chatdatanum=rank2[i].user_bnum,
         )
         string += str_example
-    
+
     msg = saa.Text(string)
-    
+
     if plugin_config.visualization:
         image = await get_rank_image(rank2)
         msg += saa.Image(image)
-    
+
     if plugin_config.suffix:
         timecost = t.time() - state["t1"]
         suffix = saa.Text(plugin_config.string_suffix.format(timecost=timecost))
         msg += suffix
-        
+
     await msg.finish(reply=True)
+
+
+@scheduler.scheduled_job(
+    "dialectlist", day="*/2", id="xxx", args=[1], kwargs={"arg2": 2}
+)
+async def __():
+    pass
