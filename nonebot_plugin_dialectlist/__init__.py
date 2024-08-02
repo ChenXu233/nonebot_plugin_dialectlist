@@ -52,6 +52,7 @@ from .utils import (
     msg_counter,
     get_rank_image,
     persist_id2user_id,
+    # get_user_info2,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -192,6 +193,8 @@ async def _group_message(
                         state["stop"] = state["start"] + timedelta(days=1)
                 except ValueError:
                     await rank_cmd.finish("请输入正确的日期，不然我没法理解呢！")
+                    
+    logger.debug(f"命令解析花费时间:{t.time() - t1}")
 
 
 @rank_cmd.got(
@@ -213,6 +216,7 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
+    t1 = t.time()
     if id := state["group_id"]:
         id = str(id)
         logger.debug(f"group_id: {id}")
@@ -222,6 +226,9 @@ async def handle_rank(
 
     if not id:
         await saa.Text("没有指定群哦").finish()
+
+    logger.debug(f"所属群聊解析花费时间:{t.time() - t1}")
+    t1 = t.time()
 
     messages = await get_message_records(
         id2s=[id],
@@ -233,11 +240,16 @@ async def handle_rank(
         time_stop=stop,
         exclude_id1s=plugin_config.excluded_people,
     )
-
+    
+    logger.debug(f"获取群聊消息花费时间:{t.time() - t1}")
+    t1 = t.time()
+    
     if not messages:
         await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
 
     rank = got_rank(msg_counter(messages))
+    logger.debug(f"群聊消息计数花费时间:{t.time() - t1}")
+    t1 = t.time()
     logger.debug(rank)
     rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
@@ -292,6 +304,8 @@ async def handle_rank(
         string += str_example
 
     msg = saa.Text(string)
+    logger.debug(f"群聊消息渲染文字花费时间:{t.time() - t1}")
+    t1 = t.time()
 
     if plugin_config.visualization:
         image = await get_rank_image(rank2)
@@ -302,11 +316,13 @@ async def handle_rank(
         suffix = saa.Text(plugin_config.string_suffix.format(timecost=timecost))
         msg += suffix
 
+    logger.debug(f"群聊消息渲染图片花费时间:{t.time() - t1}")
+
     await msg.finish(reply=True)
 
 
-@scheduler.scheduled_job(
-    "dialectlist", day="*/2", id="xxx", args=[1], kwargs={"arg2": 2}
-)
-async def __():
-    pass
+# @scheduler.scheduled_job(
+#     "dialectlist", day="*/2", id="xxx", args=[1], kwargs={"arg2": 2}
+# )
+# async def __():
+#     pass

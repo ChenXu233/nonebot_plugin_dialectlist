@@ -1,5 +1,5 @@
 body {
-    background-image: url('https://image.anosu.top/pixiv/direct?size=regular');
+    background-image: url('https://api.yimian.xyz/img');
     background-attachment: scroll;
     margin: 0;
     background-size: cover;
