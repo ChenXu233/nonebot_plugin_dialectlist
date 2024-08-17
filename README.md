@@ -50,11 +50,11 @@ nonebot-plugin-dialectlist
 
 在 .env 中，可以添加以下配置项
 ```python
-dialectlist__string_format = '第{index}名：\n{nickname},{chatdatanum}条消息、n' #消息格式
+dialectlist__string_format = "第{index}名：\n{nickname},{chatdatanum}条消息、\n" #消息格式
 dialectlist__get_num = 10 #获取人数数量
 dialectlist__visualization = True #是否可视化
-# dialectlist__visualization_type = '圆环图' #可视化方案 （不再支持）
-dialectlist__font = 'SimHei' #字体格式
+# dialectlist__visualization_type = "圆环图" #可视化方案 （不再支持）
+dialectlist__font = "SimHei" #字体格式
 dialectlist__excluded_people = [] #排除的人的 QQ 号（或频道号？（未经测试）)
 dialectlist__excluded_self = True #是否排除机器人自己 QQ
 dialectlist__suffix: bool = False  # 是否显示后缀
