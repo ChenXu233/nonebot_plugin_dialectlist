@@ -8,6 +8,7 @@ authors = [
 dependencies = [
     "nonebot-plugin-chatrecorder>=0.6.0",
     "requests>=2.32.3",
+    "nonebot-plugin-orm[default]",
     "nonebot-plugin-apscheduler>=0.4.0",
     "nonebot-plugin-alconna>=0.50.2",
     "nonebot-plugin-cesaa>=0.4.0",
