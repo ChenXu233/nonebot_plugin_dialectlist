@@ -9,28 +9,36 @@
     </head>
     <body>
         <div class="container">
-            <div class="card" >
+            <div class="card glow" >
                 <p class="center_text">话痨排行榜</p>
             </div>
 
-            <div class="rank_container">
+            <div class="rank_container glow">
 
                 {% for i in users %}
                 <div class="rank_card">
-                    <img class="profile" src="{{ cache_path }}/{{ i.user_id }}.jpg"/>
+                    <div class="rank">
+                        <div class="rank_number rank_number_{{ i.user_index }}">{{ i.user_index }}</div>
+                    </div>
+                    <div class="avatar">
+                        <img class="profile" src="{{ cache_path }}/{{ i.user_id }}.jpg"/>
+                    </div>
                     <div class="rank_card_info">
-                        <h1>第{{ i.user_index }}名:{{ i.user_nickname }}</h1>
+                        <h1>{{ i.user_nickname }} {{ i.user_gender }}</h1>
                         <div class="g-container">
                             <div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
                         </div>
-                        <p>{{ i.user_gender }}一共废话了{{ i.user_bnum }}句，占比{{ i.user_proportion }}%</p>
+                        <p>{{ i.user_proportion }}%</p>
+                    </div>
+                    <div class="rank">
+                        <div class="rank_number">{{ i.user_bnum }}</div>
                     </div>
                 </div>
                 {% endfor %}
 
             </div>
 
-            <div class="card2">
+            <div class="card2 glow">
                 <img class="profile2" src="{{ file_path }}/template/avatar/master.jpg"/>
                 <p class="center_text2">Designed By ChenXu233</p>
             </div>

@@ -280,14 +280,14 @@ async def handle_rank(
                 **model_dump(user_info),
                 user_bnum=i[1],
                 user_proportion=round(i[1] / total * 100, 2),
-                user_index=cn2an.an2cn(index),
+                user_index=index,
                 user_nickname=user_nickname,
                 user_avatar_bytes=user_avatar,
             )
             user.user_gender = (
-                "她"
+                "♀"
                 if user_info.user_gender == "female"
-                else "他" if user_info.user_gender == "male" else "ta"
+                else "♂" if user_info.user_gender == "male" else ""
             )
             rank2.append(user)
             index += 1
