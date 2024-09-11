@@ -38,12 +38,15 @@ nonebot-plugin-dialectlist
 
 ### ✅ 插件依赖于
 
-1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————储存历史的消息
+1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————本地化储存
 2. [nonebot-plugin-userinfo](https://github.com/noneplugin/nonebot-plugin-userinfo) ————获取用户信息
 3. [nonebot-plugin-apscheduler](https://github.com/nonebot/plugin-apscheduler) ————定时发送排行榜信息
 4. [nonebot-plugin-alconna](https://github.com/ArcletProject/nonebot-plugin-alconna) ————实现命令解析
-5. [nonebot-plugin-cesaa](https://github.com/MountainDash/nonebot-plugin-send-anything-anywhere) ————实现多平台
-  
+5. [nonebot-plugin-chatrecorder](https://github.com/noneplugin/nonebot-plugin-chatrecorder) ————实现消息储存
+6. [nonebot-plugin-cesaa](https://github.com/MountainDash/nonebot-plugin-send-anything-anywhere) ————实现多平台
+
+ **⚠注意** 若先前没有安装过```nonebot-plugin-chatrecorder```或者```nonebot-plugin-orm```，则会在启动时报错，请按报错的提示安装数据库！
+ 
 ## ⚙ 配置
 
 需要**提前配置**本插件所**依赖的插件**！
@@ -147,22 +150,23 @@ __！！注意！！__
 
 - [x] 适配全平台
 
+- [x] 更好看的图片渲染
+
+- [x] 添加一些全新的可配置项
+      
 - [x] 尝试利用 jinja2 模板引擎制作可视化图片
 
 - [x] 私聊的查询（超级用户可以任意查询群聊的信息）一半完成
 
-- [x] 添加一些全新的可配置项
-
-- [x] 更好看的图片渲染
-
 - [ ] 提供多样化的渲染器配置（html 渲染，pillow 渲染，统计绘图软件渲染）
-- [ ] 为 pillow 渲染方式提供插件的加载方式（什么？插件里的插件？？？）
-
-- [ ] 查询带某关键词的消息量
 
 - [ ] 使用管理员权限直接获取 QQ 官方统计的今日消息量以优化代码运行速度
 
+- [ ] 为 pillow 渲染方式提供插件的加载方式（什么？插件里的插件？？？）
+
 - [ ] 特殊的储存方案优化消息统计
+
+- [ ] 查询带某关键词的消息量
   
  待补充。.....
 
