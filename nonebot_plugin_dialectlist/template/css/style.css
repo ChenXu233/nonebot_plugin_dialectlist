@@ -1,100 +1,114 @@
 body {
-    background-image: url('https://api.yimian.xyz/img');
-    background-attachment: scroll;
-    margin: 0;
+    background-color: #1A1A1A;
+    /* Dark gradient */
     background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    width: 1024;
+    background-attachment: fixed;
+    /* Ensure background stays fixed during scroll */
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: "text", sans-serif;
+    color: #E0E0E0;
+    /* Light gray text for better contrast */
+}
+
+@font-face {
+    font-family: "text";
+    src: url("../res/HarmonyOS_Sans_SC.woff2");
 }
 
 .container {
     padding: 20px 40px;
     position: relative;
-    flex-direction: column;
     display: flex;
+    flex-direction: column;
 }
 
-.card {
-    border: 5px solid rgba(200, 200, 200, 1);
-    text-align: center; /*设置文本水平居中*/
+.glow {
+    border: 2px solid rgba(77, 228, 255, 0.8);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    /* Neon glow */
+}
+
+.card,
+.card2 {
+    text-align: center;
     align-content: center;
-    margin: 1% 1% 1% 1%;
-    border-radius: 2rem;
-    background: rgba(255, 255, 255, .2);
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
+    margin: 1%;
+    border-radius: 1rem;
+    /* background: rgba(25, 25, 25, 0.9); Darker background */
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
 }
 
 .card2 {
+    display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    align-items: center;
     flex-direction: revert;
-    display: flex;
-    border: 5px solid rgba(200, 200, 200, 1);
-    text-align: center; /*设置文本水平居中*/
-    align-content: center;
-    margin: 1% 1% 1% 1%;
-    border-radius: 2rem;
-    background: rgba(255, 255, 255, .2);
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
 }
 
 .center_text {
     text-align: center;
-    font-size: 300%;
-    font-weight: bolder;
+    font-size: 3rem;
+    font-weight: 900;
+    color: #00FFFF;
+    /* Cyan color for a techno vibe */
 }
 
 .center_text2 {
     text-align: center;
-    font-size: 150%;
+    font-size: 1.5rem;
+    color: #A0A0A0;
+    /* Slightly lighter gray */
 }
 
 .rank_container {
+    display: flex;
     flex-direction: column;
-    display: flex;
-    border: 5px solid rgba(200, 200, 200, 1);
-    border-radius: 2rem;
-    padding: 10px 20px;
-    margin: 1% 1% 1% 1%;
-    display: flex;
+    border-radius: 1rem;
+    padding: 10px 10px;
+    margin: 1%;
     justify-content: center;
     align-items: center;
-    background: rgba(243, 243, 240, 0.6);
+    /* background: rgba(30, 30, 30, 0.9); Dark background */
 }
 
 .rank_card {
     display: flex;
-    width: 90%;
+    width: 100%;
     flex-direction: row;
-    border: 3px solid rgba(255, 255, 255, 0.61);
-    margin: 20px 10px;
-    border-radius: 2rem;
-    /* padding: 20px 40px; */
+    /* border: 2px solid rgba(100, 100, 100, 0.7); */
+    margin: 10px 10px;
+    border-radius: 1rem;
     align-content: center;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    /* background: rgba(40, 40, 40, 0.8); Slightly lighter for contrast */
 }
 
-.profile{
-    width: 20%;
-    height: 20%;
-    border: 3px solid rgba(255, 255, 255, 0.61);
-    border-radius: 2000px;
+.profile,
+.profile2 {
+    border: 2px solid rgba(100, 100, 100, 0.7);
+    border-radius: 50%;
     background-size: cover;
     margin-right: 20px;
 }
 
-.profile2{
+.avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile {
+    width: 12vw;
+    height: 12vw;
+}
+
+.profile2 {
     width: 8%;
     height: 8%;
-    border: 3px solid rgba(255, 255, 255, 0.61);
-    border-radius: 2000px;
-    background-size: cover;
-    margin-right: 20px;
 }
 
 .rank_card_info {
@@ -107,12 +121,50 @@ body {
     width: 90%;
     height: 25px;
     border-radius: 25px;
-    background: #ffb2b25d;
+    background: rgb(0 0 0 / 31%);
 }
 
 .g-progress {
     width: 50%;
     height: inherit;
     border-radius: 25px 20px 20px 25px;
-    background: linear-gradient(90deg,rgb(57, 230, 230), rgb(21, 161, 248));
+    background: linear-gradient(90deg, rgb(0, 128, 255), rgb(255, 0, 174));
+    /* Neon cyan to magenta gradient */
+}
+
+.rank {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.rank_number {
+    margin: 50px;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+}
+
+.rank_number_1 {
+    border-radius: 999px;
+    background-color: gold;
+    color: rgb(154, 105, 14);
+}
+
+.rank_number_2 {
+    border-radius: 999px;
+    background-color: silver;
+    color: rgb(80, 80, 80);
+}
+
+.rank_number_3 {
+    border-radius: 999px;
+    background-color: #CD7F32;
+    color: rgb(95 52 14);
 }
