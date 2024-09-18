@@ -1,16 +1,19 @@
 import os
+import asyncio
 import unicodedata
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy import or_, select
 from sqlalchemy.sql import ColumnElement
 
 from nonebot.log import logger
 from nonebot.params import Depends
 from nonebot.matcher import Matcher
+from nonebot.adapters import Bot, Event
 
 from nonebot_plugin_orm import get_session
 from nonebot_plugin_session import Session, SessionLevel, extract_session
+from nonebot_plugin_userinfo import get_user_info, UserInfo
 from nonebot_plugin_localstore import get_cache_dir
 from nonebot_plugin_htmlrender import template_to_pic
 from nonebot_plugin_session_orm import SessionModel
@@ -180,3 +183,7 @@ async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
         },
         pages={"viewport": {"width": 1000, "height": 10}},
     )
+
+async def get_user_infos(bot:Bot,event:Event,user_ids:List[str],use_cache: bool = True)-> List[Optional[UserInfo]]:
+    pool = [get_user_info(bot, event, id, use_cache) for id in user_ids]
+    return (await asyncio.gather(*pool))

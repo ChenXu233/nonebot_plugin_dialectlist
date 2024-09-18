@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
 from nonebot import get_driver, get_plugin_config
 
 
@@ -9,7 +9,7 @@ class ScopedConfig(BaseModel):
     suffix: bool = False  # 是否显示后缀
     excluded_self: bool = True
     visualization: bool = True  # 是否可视化
-    counting_cache: bool = True
+    counting_cache: bool = False # 计数缓存（没有完工）
     excluded_people: List[str] = []  # 排除的人的QQ号
     timezone: Optional[str] = "Asia/Shanghai"
     string_suffix: str = "统计花费时间:{timecost}秒"  # 消息格式后缀

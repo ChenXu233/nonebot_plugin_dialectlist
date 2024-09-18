@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-dialectlist"
-version = "2.2.4"
+version = "2.3.0"
 description = "看看你群群友有多能说"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
@@ -15,7 +15,7 @@ dependencies = [
     "nonebot-plugin-userinfo>=0.2.4",
     "nonebot-plugin-htmlrender>=0.3.3",
     "nonebot2>=2.3.2",
-    "cn2an>=0.5.22"
+    "pillow>=10.4.0",
 ]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"

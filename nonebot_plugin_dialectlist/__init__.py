@@ -52,6 +52,7 @@ from .utils import (
     msg_counter,
     get_rank_image,
     persist_id2user_id,
+    get_user_infos,
     # get_user_info2,
 )
 
@@ -193,7 +194,7 @@ async def _group_message(
                         state["stop"] = state["start"] + timedelta(days=1)
                 except ValueError:
                     await rank_cmd.finish("请输入正确的日期，不然我没法理解呢！")
-                    
+
     logger.debug(f"命令解析花费时间:{t.time() - t1}")
 
 
@@ -216,7 +217,7 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
-    t1 = t.time()
+
     if id := state["group_id"]:
         id = str(id)
         logger.debug(f"group_id: {id}")
@@ -227,29 +228,26 @@ async def handle_rank(
     if not id:
         await saa.Text("没有指定群哦").finish()
 
-    logger.debug(f"所属群聊解析花费时间:{t.time() - t1}")
-    t1 = t.time()
+    if plugin_config.counting_cache:
+        raise Exception("我草缓存功能还没端上来呢，你怎么就先用上了")    
+    else:
+        messages = await get_message_records(
+            id2s=[id],
+            id_type=SessionIdType.GROUP,
+            include_bot_id=False,
+            include_bot_type=False,
+            types=["message"],  # 排除机器人自己发的消息
+            time_start=start,
+            time_stop=stop,
+            exclude_id1s=plugin_config.excluded_people,
+        )
 
-    messages = await get_message_records(
-        id2s=[id],
-        id_type=SessionIdType.GROUP,
-        include_bot_id=False,
-        include_bot_type=False,
-        types=["message"],  # 排除机器人自己发的消息
-        time_start=start,
-        time_stop=stop,
-        exclude_id1s=plugin_config.excluded_people,
-    )
-    
-    logger.debug(f"获取群聊消息花费时间:{t.time() - t1}")
-    t1 = t.time()
-    
-    if not messages:
-        await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
+        if not messages:
+            await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
 
-    rank = got_rank(msg_counter(messages))
-    logger.debug(f"群聊消息计数花费时间:{t.time() - t1}")
-    t1 = t.time()
+        raw_rank = msg_counter(messages)
+
+    rank = got_rank(raw_rank)
     logger.debug(rank)
     rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
@@ -259,8 +257,9 @@ async def handle_rank(
 
     total = sum([i[1] for i in rank])
     index = 1
-    for i in rank:
-        if user_info := await get_user_info(bot, event, user_id=str(i[0])):
+    user_infos = await get_user_infos(bot, event, user_ids=[str(i[0]) for i in rank])
+    for user_info,i in zip(user_infos,rank):
+        if user_info:
             logger.debug(user_info)
             user_nickname = (
                 user_info.user_displayname
@@ -304,7 +303,6 @@ async def handle_rank(
         string += str_example
 
     msg = saa.Text(string)
-    logger.debug(f"群聊消息渲染文字花费时间:{t.time() - t1}")
     t1 = t.time()
 
     if plugin_config.visualization:
