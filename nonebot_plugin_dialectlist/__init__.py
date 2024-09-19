@@ -9,7 +9,6 @@ require("nonebot_plugin_cesaa")
 
 import re
 import os
-import cn2an
 import time as t
 import nonebot_plugin_saa as saa
 
