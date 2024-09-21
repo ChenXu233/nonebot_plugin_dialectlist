@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Union
-from pydantic import BaseModel
-from sqlalchemy import JSON, TEXT, String,Integer
+from sqlalchemy import Integer
 from nonebot_plugin_orm import Model
 from nonebot_plugin_userinfo import UserInfo
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,6 +17,7 @@ class UserRankInfo(UserInfo):
 # class MsgCountDayData(BaseModel):
 #     session_id: str
 #     session_bnum: int
+
 
 class MessageCountCache(Model):
     __table_args__ = {"extend_existing": True}

@@ -49,6 +49,9 @@ indent-style = "tab"
 build = 'pdm run setup.py sdist'
 publish = 'pdm run python -m twine upload dist/*'
 
+[tool.ruff.lint]
+ignore = ["E402"]
+
 
 # 以下为智普 AI 生成，还不知道这玩意有啥用。
 # [tool.pdm.dev-dependencies]

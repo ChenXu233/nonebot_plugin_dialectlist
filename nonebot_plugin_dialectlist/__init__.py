@@ -8,21 +8,18 @@ require("nonebot_plugin_alconna")
 require("nonebot_plugin_cesaa")
 
 import re
-import os
 import time as t
 import nonebot_plugin_saa as saa
 
-from typing import Union, Optional, List
+from typing import Union, Optional
 from datetime import datetime, timedelta
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
 
 from nonebot.log import logger
 from nonebot.typing import T_State
-from nonebot.compat import model_dump
 from nonebot.params import Arg, Depends
 from nonebot.adapters import Bot, Event
-from nonebot.permission import SUPERUSER
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
 from nonebot_plugin_alconna import (
     Args,
@@ -30,9 +27,6 @@ from nonebot_plugin_alconna import (
     Alconna,
     on_alconna,
 )
-
-from nonebot_plugin_apscheduler import scheduler
-from nonebot_plugin_userinfo import get_user_info
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
@@ -45,7 +39,6 @@ from .time import (
     get_datetime_now_with_timezone,
     parse_datetime,
 )
-from .model import UserRankInfo
 from .utils import (
     got_rank,
     msg_counter,
@@ -216,7 +209,7 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
-    
+
     if id := state["group_id"]:
         id = str(id)
         logger.debug(f"group_id: {id}")
@@ -228,7 +221,7 @@ async def handle_rank(
         await saa.Text("没有指定群哦").finish()
 
     if plugin_config.counting_cache:
-        raise Exception("我草缓存功能还没端上来呢，你怎么就先用上了")    
+        raise Exception("我草缓存功能还没端上来呢，你怎么就先用上了")
     else:
         messages = await get_message_records(
             id2s=[id],
