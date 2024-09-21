@@ -5,7 +5,7 @@
 groups = ["default", "Test", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:8a7227ac19296267b23a8f0d5f9736b8791dd26c073e3e382592faee2b708ddb"
+content_hash = "sha256:f31fbbd00506680ed623e0216a48314dcbb142cebec25ebe15f1dc9a50915b25"
 
 [[metadata.targets]]
 requires_python = "~=3.9"
@@ -1293,6 +1293,21 @@ dependencies = [
 files = [
     {file = "nonebot_plugin_session_orm-0.2.0-py3-none-any.whl", hash = "sha256:e0a6009803feccf4e98db483e1f9072122ddbca40df0b2d1b45741c8e5332acb"},
     {file = "nonebot_plugin_session_orm-0.2.0.tar.gz", hash = "sha256:420e210898a3f348cebbb4ea0816bab66f3299c7b0c01e929a01967d60cc438c"},
+]
+
+[[package]]
+name = "nonebot-plugin-uninfo"
+version = "0.1.1"
+requires_python = ">=3.9"
+summary = "Universal Information Model for Nonebot2"
+groups = ["default"]
+dependencies = [
+    "importlib-metadata>=4.13.0",
+    "nonebot2>=2.3.0",
+]
+files = [
+    {file = "nonebot_plugin_uninfo-0.1.1-py3-none-any.whl", hash = "sha256:98fc4ae223ee333ccb5e29352cead1a9eb9b4fea295ed3f691da8b4ce6b920fc"},
+    {file = "nonebot_plugin_uninfo-0.1.1.tar.gz", hash = "sha256:5d8839442ff9b421b773e3dc91dc4d916327a0fecb881da6879f889778d6de6d"},
 ]
 
 [[package]]
