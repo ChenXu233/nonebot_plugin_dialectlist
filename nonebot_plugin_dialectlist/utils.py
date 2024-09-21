@@ -8,6 +8,7 @@ from sqlalchemy.sql import ColumnElement
 
 from nonebot.log import logger
 from nonebot.params import Depends
+from nonebot.compat import model_dump
 from nonebot.matcher import Matcher
 from nonebot.adapters import Bot, Event
 
@@ -183,7 +184,64 @@ async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
         },
         pages={"viewport": {"width": 1000, "height": 10}},
     )
+def _get_user_nickname(user_info:UserInfo)->str:
+    user_nickname = (
+        user_info.user_displayname
+        if user_info.user_displayname
+        else user_info.user_name if user_info.user_name else user_info.user_id
+    )
+    return user_nickname
 
-async def get_user_infos(bot:Bot,event:Event,user_ids:List[str],use_cache: bool = True)-> List[Optional[UserInfo]]:
+async def _get_user_default_avatar()->bytes:
+    img = open(
+        os.path.dirname(os.path.abspath(__file__))
+        + "/template/avatar/default.jpg",
+        "rb",
+        ).read()
+    return img
+
+def get_default_user_info()->UserInfo:
+    user_info = UserInfo(
+        user_id="114514",
+        user_name="鬼知道这谁，bot获取不了",
+    )
+    return user_info
+
+async def get_user_infos(bot:Bot,event:Event,rank:List,use_cache: bool = True)-> List[UserRankInfo]:
+    
+    user_ids = [i[0] for i in rank]
     pool = [get_user_info(bot, event, id, use_cache) for id in user_ids]
-    return (await asyncio.gather(*pool))
+    user_infos = (await asyncio.gather(*pool))
+    
+    pool = []
+    for i in user_infos:
+        if not i:
+            pool.append(_get_user_default_avatar())
+            continue
+        if i.user_avatar:
+            pool.append(i.user_avatar.get_image())
+    user_avatars = await asyncio.gather(*pool)
+    for i in user_avatars:
+        if not i:
+            user_avatars[user_avatars.index(i)] = await(_get_user_default_avatar())
+
+    total = sum([i[1] for i in rank])
+    rank2 = []
+    for i in range(len(rank)):
+        
+        user_info = user_infos[i]
+        if not user_info:
+            user_info = get_default_user_info()
+            
+        user = UserRankInfo(
+            **model_dump(user_info),
+            user_bnum=rank[i][1],
+            user_proportion=round(rank[i][1] / total * 100, 2),
+            user_index=i+1,
+            user_nickname=_get_user_nickname(user_info),
+            user_avatar_bytes=user_avatars[i],
+        )
+        rank2.append(user)
+
+    return rank2
+

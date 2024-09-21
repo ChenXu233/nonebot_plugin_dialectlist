@@ -216,7 +216,7 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
-
+    
     if id := state["group_id"]:
         id = str(id)
         logger.debug(f"group_id: {id}")
@@ -248,47 +248,14 @@ async def handle_rank(
 
     rank = got_rank(raw_rank)
     logger.debug(rank)
-    rank2: List[UserRankInfo] = []
     ids = await persist_id2user_id([int(i[0]) for i in rank])
     for i in range(len(rank)):
         rank[i][0] = str(ids[i])
         logger.debug(rank[i])
 
-    total = sum([i[1] for i in rank])
-    index = 1
-    user_infos = await get_user_infos(bot, event, user_ids=[str(i[0]) for i in rank])
-    for user_info,i in zip(user_infos,rank):
-        if user_info:
-            logger.debug(user_info)
-            user_nickname = (
-                user_info.user_displayname
-                if user_info.user_displayname
-                else user_info.user_name if user_info.user_name else user_info.user_id
-            )
-            user_avatar = (
-                await user_info.user_avatar.get_image()
-                if user_info.user_avatar
-                else open(
-                    os.path.dirname(os.path.abspath(__file__))
-                    + "/template/avatar/default.jpg",
-                    "rb",
-                ).read()
-            )
-            user = UserRankInfo(
-                **model_dump(user_info),
-                user_bnum=i[1],
-                user_proportion=round(i[1] / total * 100, 2),
-                user_index=index,
-                user_nickname=user_nickname,
-                user_avatar_bytes=user_avatar,
-            )
-            user.user_gender = (
-                "♀"
-                if user_info.user_gender == "female"
-                else "♂" if user_info.user_gender == "male" else ""
-            )
-            rank2.append(user)
-            index += 1
+    t1 = t.time()
+    rank2 = await get_user_infos(bot, event, rank)
+    logger.debug(f"获取用户信息花费时间:{t.time() - t1}")
 
     string: str = ""
     for i in rank2:

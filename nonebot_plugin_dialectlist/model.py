@@ -18,6 +18,7 @@ class UserRankInfo(UserInfo):
 # class MsgCountDayData(BaseModel):
 #     session_id: str
 #     session_bnum: int
+
 class MessageCountCache(Model):
     __table_args__ = {"extend_existing": True}
     id: Mapped[int] = mapped_column(primary_key=True)
