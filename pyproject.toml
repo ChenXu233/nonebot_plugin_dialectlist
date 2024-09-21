@@ -40,24 +40,10 @@ distribution = true
 
 [tool.ruff]
 line-length = 80
+
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "tab"
 
-[tool.pdm.scripts]
-
-build = 'pdm run setup.py sdist'
-publish = 'pdm run python -m twine upload dist/*'
-
 [tool.ruff.lint]
 ignore = ["E402"]
-
-
-# 以下为智普 AI 生成，还不知道这玩意有啥用。
-# [tool.pdm.dev-dependencies]
-# black = "^23.1.0"
-# isort = "^5.10.1"
-# pre-commit = "^2.20.0"
-
-# [tool.pdm.global-options]
-# --no-pip-version-check = true
