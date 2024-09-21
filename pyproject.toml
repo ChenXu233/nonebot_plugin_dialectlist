@@ -27,7 +27,8 @@ dev = [
     "ruff>=0.5.5",
     "setuptools>=71.1.0",
     "twine>=5.1.0",
-    "nb-cli>=0.7.6"
+    "nb-cli>=0.7.6",
+    "py-spy>=0.3.14",
 ]
 Test = [
     "nonebot-adapter-onebot>=2.4.4",
