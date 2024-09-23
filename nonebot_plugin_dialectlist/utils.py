@@ -247,6 +247,11 @@ async def get_user_infos(
             user_nickname=_get_user_nickname(user_info),
             user_avatar_bytes=user_avatars[i],
         )
+        user.user_gender = (
+            "♂"
+            if user.user_gender == "male"
+            else "♀" if user.user_gender == "female" else ""
+        )
         rank2.append(user)
 
     return rank2
