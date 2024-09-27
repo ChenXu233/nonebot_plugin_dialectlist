@@ -26,16 +26,6 @@ from .config import plugin_config
 
 cache_path = get_cache_dir("nonebot_plugin_dialectlist")
 
-# 暂时不做考虑
-# def admin_permission():
-#     permission = SUPERUSER
-#     with contextlib.suppress(ImportError):
-#         from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
-
-#         permission = permission | GROUP_ADMIN | GROUP_OWNER
-
-#     return permission
-
 
 async def ensure_group(matcher: Matcher, session: Session = Depends(extract_session)):
     """确保在群组中使用"""

@@ -13,6 +13,7 @@
         "htmlrender",
         "localstore",
         "parameterless",
+        "postprocessor",
         "pyecharts",
         "pygal",
         "sqlalchemy",

@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
 
+from nonebot import on_command
 from nonebot.log import logger
 from nonebot.typing import T_State
 from nonebot.params import Arg, Depends
@@ -30,8 +31,7 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
-# from . import migrations #抄词云的部分代码，还不知道这有什么用
-# from .function import *
+from .storage import get_cache,build_cache
 from .config import Config, plugin_config
 from .usage import __usage__
 from .time import (
@@ -45,7 +45,6 @@ from .utils import (
     get_rank_image,
     persist_id2user_id,
     get_user_infos,
-    # get_user_info2,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -58,7 +57,6 @@ __plugin_meta__ = PluginMetadata(
         "nonebot_plugin_chatrecorder", "nonebot_plugin_saa", "nonebot_plugin_alconna"
     ),
     config=Config,
-    # extra={"orm_version_location": migrations},
 )
 
 
@@ -76,6 +74,13 @@ def wrapper(slot: Union[int, str], content: Optional[str], context) -> str:
         return content
     return ""  # pragma: no cover
 
+build_cache_cmd = on_command("build_cache", aliases={"重建缓存"}, block=True)
+
+@build_cache_cmd.handle()
+async def _build_cache(bot: Bot, event: Event):
+    await saa.Text("正在重建缓存，请稍等。").send(reply=True)
+    await build_cache()
+    await saa.Text("重建缓存完成。").send(reply=True)
 
 rank_cmd = on_alconna(
     Alconna(
@@ -187,8 +192,6 @@ async def _group_message(
                 except ValueError:
                     await rank_cmd.finish("请输入正确的日期，不然我没法理解呢！")
 
-    logger.debug(f"命令解析花费时间:{t.time() - t1}")
-
 
 @rank_cmd.got(
     "start",
@@ -221,8 +224,9 @@ async def handle_rank(
         await saa.Text("没有指定群哦").finish()
 
     if plugin_config.counting_cache:
-        raise Exception("我草缓存功能还没端上来呢，你怎么就先用上了")
+        raw_rank = await get_cache(start, stop, id)
     else:
+        t1 = t.time()
         messages = await get_message_records(
             id2s=[id],
             id_type=SessionIdType.GROUP,
@@ -233,11 +237,11 @@ async def handle_rank(
             time_stop=stop,
             exclude_id1s=plugin_config.excluded_people,
         )
-
-        if not messages:
-            await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
-
+        logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
         raw_rank = msg_counter(messages)
+
+    if not raw_rank:
+        await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
 
     rank = got_rank(raw_rank)
     logger.debug(rank)
@@ -276,10 +280,3 @@ async def handle_rank(
     logger.debug(f"群聊消息渲染图片花费时间:{t.time() - t1}")
 
     await msg.finish(reply=True)
-
-
-# @scheduler.scheduled_job(
-#     "dialectlist", day="*/2", id="xxx", args=[1], kwargs={"arg2": 2}
-# )
-# async def __():
-#     pass
