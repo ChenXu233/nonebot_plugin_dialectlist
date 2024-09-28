@@ -1,4 +1,5 @@
 import os
+import httpx
 import asyncio
 import unicodedata
 
@@ -15,6 +16,7 @@ from nonebot.adapters import Bot, Event
 from nonebot_plugin_orm import get_session
 from nonebot_plugin_session import Session, SessionLevel, extract_session
 from nonebot_plugin_userinfo import get_user_info, UserInfo
+from nonebot_plugin_userinfo.exception import NetworkError
 from nonebot_plugin_localstore import get_cache_dir
 from nonebot_plugin_htmlrender import template_to_pic
 from nonebot_plugin_session_orm import SessionModel
@@ -192,6 +194,19 @@ async def _get_user_default_avatar() -> bytes:
     ).read()
     return img
 
+async def _get_user_avatar(user: UserInfo, client: httpx.AsyncClient) -> bytes:
+    if not user.user_avatar:
+        return await _get_user_default_avatar()
+    url = user.user_avatar.get_url()
+    for i in range(3):
+        try:
+            resp = await client.get(url, timeout=10)
+            resp.raise_for_status()
+            return resp.content
+        except Exception as e:
+            logger.warning(f"Error downloading {url}, retry {i}/3: {e}")
+            await asyncio.sleep(3)
+    raise NetworkError(f"{url} 下载失败！")
 
 def get_default_user_info() -> UserInfo:
     user_info = UserInfo(
@@ -200,7 +215,6 @@ def get_default_user_info() -> UserInfo:
     )
     return user_info
 
-
 async def get_user_infos(
     bot: Bot, event: Event, rank: List, use_cache: bool = True
 ) -> List[UserRankInfo]:
@@ -208,15 +222,17 @@ async def get_user_infos(
     user_ids = [i[0] for i in rank]
     pool = [get_user_info(bot, event, id, use_cache) for id in user_ids]
     user_infos = await asyncio.gather(*pool)
+    
+    async with httpx.AsyncClient() as client:
+        pool = []
+        for i in user_infos:
+            if not i:
+                pool.append(_get_user_default_avatar())
+                continue
+            if i.user_avatar:
+                pool.append(_get_user_avatar(i, client))
+        user_avatars = await asyncio.gather(*pool)
 
-    pool = []
-    for i in user_infos:
-        if not i:
-            pool.append(_get_user_default_avatar())
-            continue
-        if i.user_avatar:
-            pool.append(i.user_avatar.get_image())
-    user_avatars = await asyncio.gather(*pool)
     for i in user_avatars:
         if not i:
             user_avatars[user_avatars.index(i)] = await _get_user_default_avatar()
