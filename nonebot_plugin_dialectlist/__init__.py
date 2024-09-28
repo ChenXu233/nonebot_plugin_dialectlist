@@ -224,7 +224,9 @@ async def handle_rank(
         await saa.Text("没有指定群哦").finish()
 
     if plugin_config.counting_cache:
+        t1 = t.time()
         raw_rank = await get_cache(start, stop, id)
+        logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
     else:
         t1 = t.time()
         messages = await get_message_records(
@@ -237,8 +239,8 @@ async def handle_rank(
             time_stop=stop,
             exclude_id1s=plugin_config.excluded_people,
         )
-        logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
         raw_rank = msg_counter(messages)
+        logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
 
     if not raw_rank:
         await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()

@@ -6,10 +6,10 @@ from nonebot import get_driver, get_plugin_config
 class ScopedConfig(BaseModel):
     get_num: int = 5  # 获取人数数量
     font: str = "SimHei"  # 字体格式
-    suffix: bool = False  # 是否显示后缀
+    suffix: bool = True  # 是否显示后缀
     excluded_self: bool = True  # 是否排除自己
     visualization: bool = True  # 是否可视化
-    counting_cache: bool = True  # 计数缓存(能够提高回复速度)
+    counting_cache: bool = False  # 计数缓存(能够提高回复速度)
     excluded_people: List[str] = []  # 排除的人的QQ号
     timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
     string_suffix: str = "统计花费时间:{timecost}秒"  # 消息格式后缀
