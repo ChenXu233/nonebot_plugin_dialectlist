@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-dialectlist"
-version = "2.3.1"
+version = "2.4.1"
 description = "看看你群群友有多能说"
 authors = [
     {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
