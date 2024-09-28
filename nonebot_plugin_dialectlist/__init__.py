@@ -244,7 +244,6 @@ async def handle_rank(
         await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
 
     rank = got_rank(raw_rank)
-    logger.debug(rank)
     ids = await persist_id2user_id([int(i[0]) for i in rank])
     for i in range(len(rank)):
         rank[i][0] = str(ids[i])

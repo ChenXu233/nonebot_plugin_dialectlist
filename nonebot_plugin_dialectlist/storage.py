@@ -28,8 +28,9 @@ async def get_cache(time_start: datetime, time_stop: datetime, group_id: str):
         sessions = (await db_session.scalars(statement)).all()
 
         where = [
-            or_(MessageCountCache.session_id == session.id) for session in sessions
+            or_(*[MessageCountCache.session_id == session.id for session in sessions])
         ]
+        statement = select(MessageCountCache).where(*where)
         where.append(or_(MessageCountCache.time >= remove_timezone(time_start)))
         where.append(or_(MessageCountCache.time <= remove_timezone(time_stop)))
         statement = select(MessageCountCache).where(*where)
@@ -37,7 +38,7 @@ async def get_cache(time_start: datetime, time_stop: datetime, group_id: str):
         user_caches = (await db_session.scalars(statement)).all()
         raw_rank = {}
         for i in user_caches:
-            raw_rank[i.session_id] = i.session_bnum
+            raw_rank[i.session_id] = raw_rank.get(i.session_id, 0) + i.session_bnum
         return raw_rank
 
 
@@ -111,13 +112,13 @@ async def _(bot: Bot, event: Event,session: Session = Depends(extract_session)):
 
     async with get_session() as db_session:
         session_id = await get_session_persist_id(session)
+        logger.debug("session_id:"+str(session_id))
         where = [or_(MessageCountCache.session_id == session_id)]
-        where = [or_(MessageCountCache.time == remove_timezone(now))]
+        where.append(or_(MessageCountCache.time == remove_timezone(now)))
         statement = select(MessageCountCache).where(*where)
-        user_cache = (await db_session.scalars(statement)).all()
-
+        user_cache = (await db_session.scalars(statement)).first()
         if user_cache:
-            user_cache[0].session_bnum += 1
+            user_cache.session_bnum += 1
         else:
             user_cache = MessageCountCache(
                 session_id=session_id,
