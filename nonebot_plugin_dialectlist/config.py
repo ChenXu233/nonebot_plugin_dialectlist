@@ -11,6 +11,7 @@ class ScopedConfig(BaseModel):
     visualization: bool = True  # 是否可视化
     counting_cache: bool = False  # 计数缓存(能够提高回复速度)
     excluded_people: List[str] = []  # 排除的人的QQ号
+    use_user_info_cache: bool = False  # 是否使用用户信息缓存
     timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
     string_suffix: str = "统计花费时间:{timecost}秒"  # 消息格式后缀
     template_path: str = "./template/rank_template.j2"  # 模板路径

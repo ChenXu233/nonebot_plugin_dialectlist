@@ -194,6 +194,7 @@ async def _get_user_default_avatar() -> bytes:
     ).read()
     return img
 
+
 async def _get_user_avatar(user: UserInfo, client: httpx.AsyncClient) -> bytes:
     if not user.user_avatar:
         return await _get_user_default_avatar()
@@ -208,6 +209,7 @@ async def _get_user_avatar(user: UserInfo, client: httpx.AsyncClient) -> bytes:
             await asyncio.sleep(3)
     raise NetworkError(f"{url} 下载失败！")
 
+
 def get_default_user_info() -> UserInfo:
     user_info = UserInfo(
         user_id="114514",
@@ -215,14 +217,18 @@ def get_default_user_info() -> UserInfo:
     )
     return user_info
 
+
 async def get_user_infos(
-    bot: Bot, event: Event, rank: List, use_cache: bool = True
+    bot: Bot,
+    event: Event,
+    rank: List,
+    use_cache: bool = plugin_config.use_user_info_cache,
 ) -> List[UserRankInfo]:
 
     user_ids = [i[0] for i in rank]
     pool = [get_user_info(bot, event, id, use_cache) for id in user_ids]
     user_infos = await asyncio.gather(*pool)
-    
+
     async with httpx.AsyncClient() as client:
         pool = []
         for i in user_infos:
@@ -253,11 +259,13 @@ async def get_user_infos(
             user_nickname=_get_user_nickname(user_info),
             user_avatar_bytes=user_avatars[i],
         )
-        user.user_gender = (
-            "♂"
-            if user.user_gender == "male"
-            else "♀" if user.user_gender == "female" else ""
-        )
+        print(user.user_gender)
+        if user.user_gender == "male":
+            user.user_gender = "♂"
+        elif user.user_gender == "female":
+            user.user_gender = "♀"
+        else:
+            user.user_gender = "🤔"
         rank2.append(user)
 
     return rank2

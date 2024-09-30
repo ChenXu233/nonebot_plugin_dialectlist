@@ -31,7 +31,7 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_session import Session, SessionIdType, extract_session
 
-from .storage import get_cache,build_cache
+from .storage import get_cache, build_cache
 from .config import Config, plugin_config
 from .usage import __usage__
 from .time import (
@@ -74,13 +74,16 @@ def wrapper(slot: Union[int, str], content: Optional[str], context) -> str:
         return content
     return ""  # pragma: no cover
 
+
 build_cache_cmd = on_command("build_cache", aliases={"重建缓存"}, block=True)
+
 
 @build_cache_cmd.handle()
 async def _build_cache(bot: Bot, event: Event):
     await saa.Text("正在重建缓存，请稍等。").send(reply=True)
     await build_cache()
     await saa.Text("重建缓存完成。").send(reply=True)
+
 
 rank_cmd = on_alconna(
     Alconna(

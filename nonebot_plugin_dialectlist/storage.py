@@ -6,7 +6,7 @@ from sqlalchemy import delete, or_, select
 from nonebot import get_driver
 from nonebot.log import logger
 from nonebot.params import Depends
-from nonebot.adapters import Event,Bot
+from nonebot.adapters import Event, Bot
 from nonebot.message import event_postprocessor
 
 from .model import MessageCountCache
@@ -56,7 +56,9 @@ async def build_cache():
             where.append(
                 or_(
                     MessageCountCache.time
-                    == remove_timezone(msg.time.replace(hour=1, minute=0, second=0, microsecond=0))
+                    == remove_timezone(
+                        msg.time.replace(hour=1, minute=0, second=0, microsecond=0)
+                    )
                 )
             )
             statement = select(MessageCountCache).where(*where)
@@ -68,7 +70,9 @@ async def build_cache():
             else:
                 user_cache = MessageCountCache(
                     session_id=msg.session_persist_id,
-                    time=remove_timezone(msg.time.replace(hour=1, minute=0, second=0, microsecond=0)),
+                    time=remove_timezone(
+                        msg.time.replace(hour=1, minute=0, second=0, microsecond=0)
+                    ),
                     session_bnum=1,
                 )
                 db_session.add(user_cache)
@@ -100,7 +104,7 @@ async def _():
 
 
 @event_postprocessor
-async def _(bot: Bot, event: Event,session: Session = Depends(extract_session)):
+async def _(bot: Bot, event: Event, session: Session = Depends(extract_session)):
     if not plugin_config.counting_cache:
         return
     if not session.id2:
@@ -112,7 +116,7 @@ async def _(bot: Bot, event: Event,session: Session = Depends(extract_session)):
 
     async with get_session() as db_session:
         session_id = await get_session_persist_id(session)
-        logger.debug("session_id:"+str(session_id))
+        logger.debug("session_id:" + str(session_id))
         where = [or_(MessageCountCache.session_id == session_id)]
         where.append(or_(MessageCountCache.time == remove_timezone(now)))
         statement = select(MessageCountCache).where(*where)
