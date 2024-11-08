@@ -257,30 +257,33 @@ async def handle_rank(
     t1 = t.time()
     rank2 = await get_user_infos(bot, event, rank)
     logger.debug(f"获取用户信息花费时间:{t.time() - t1}")
-
+    
     string: str = ""
-    for i in rank2:
-        logger.debug(i.user_name)
-    for i in range(len(rank2)):
-        str_example = plugin_config.string_format.format(
-            index=rank2[i].user_index,
-            nickname=rank2[i].user_nickname,
-            chatdatanum=rank2[i].user_bnum,
-        )
-        string += str_example
+
+    if plugin_config.show_text_rank:
+        for i in rank2:
+            logger.debug(i.user_name)
+        for i in range(len(rank2)):
+            str_example = plugin_config.string_format.format(
+                index=rank2[i].user_index,
+                nickname=rank2[i].user_nickname,
+                chatdatanum=rank2[i].user_bnum,
+            )
+            string += str_example
 
     msg = saa.Text(string)
-    t1 = t.time()
 
     if plugin_config.visualization:
+        t1 = t.time()
         image = await get_rank_image(rank2)
         msg += saa.Image(image)
+        logger.debug(f"群聊消息渲染图片花费时间:{t.time() - t1}")
 
     if plugin_config.suffix:
         timecost = t.time() - state["t1"]
         suffix = saa.Text(plugin_config.string_suffix.format(timecost=timecost))
         msg += suffix
-
-    logger.debug(f"群聊消息渲染图片花费时间:{t.time() - t1}")
+    if not msg:
+        await saa.Text("你把可视化都关了哪来的排行榜？").finish()
 
     await msg.finish(reply=True)

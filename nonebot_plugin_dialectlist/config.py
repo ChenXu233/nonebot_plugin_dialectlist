@@ -9,6 +9,7 @@ class ScopedConfig(BaseModel):
     suffix: bool = True  # 是否显示后缀
     excluded_self: bool = True  # 是否排除自己
     visualization: bool = True  # 是否可视化
+    show_text_rank:bool = True  # 是否显示文本排名
     counting_cache: bool = False  # 计数缓存(能够提高回复速度)
     excluded_people: List[str] = []  # 排除的人的QQ号
     use_user_info_cache: bool = False  # 是否使用用户信息缓存
