@@ -88,10 +88,7 @@ async def _build_cache(bot: Bot, event: Event):
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
-        Args[
-            "type?",
-            ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]
-        ][
+        Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
             "time?",
             str,
         ],
@@ -232,7 +229,7 @@ async def handle_rank(
 
     if not id:
         await saa.Text("没有指定群哦").finish()
-        
+
     keyword = state["keyword"]
 
     if plugin_config.counting_cache:
@@ -253,11 +250,13 @@ async def handle_rank(
             time_stop=stop,
             exclude_id1s=plugin_config.excluded_people,
         )
-        raw_rank = msg_counter(messages,keyword)
+        raw_rank = msg_counter(messages, keyword)
         logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
 
     if not raw_rank:
-        await saa.Text("明明这个时间段都没有人说话怎么会有话痨榜呢？").finish()
+        await saa.Text(
+            "没有获取到排行榜数据哦，请确认时间范围和群号是否正确或者关键词是否存在~"
+        ).finish()
 
     rank = got_rank(raw_rank)
     ids = await persist_id2user_id([int(i[0]) for i in rank])
@@ -270,12 +269,12 @@ async def handle_rank(
     logger.debug(f"获取用户信息花费时间:{t.time() - t1}")
 
     string: str = ""
-    
+
     if keyword:
         string += f"关于{keyword}的话痨榜结果：\n"
     else:
         string += "话痨榜：\n"
-    
+
     for i in rank2:
         logger.debug(i.user_name)
     for i in range(len(rank2)):
