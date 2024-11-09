@@ -3,7 +3,7 @@ import httpx
 import asyncio
 import unicodedata
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy import or_, select
 from sqlalchemy.sql import ColumnElement
 
@@ -77,7 +77,9 @@ async def persist_id2group_id(ids: List[str]) -> List[str]:
     return [i.id2 for i in records]
 
 
-def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
+def msg_counter(
+    msg_list: List[MessageRecord], keyword: Optional[str]
+) -> Dict[str, int]:
     """### 计算每个人的消息量
 
     Args:
@@ -92,6 +94,10 @@ def msg_counter(msg_list: List[MessageRecord]) -> Dict[str, int]:
     logger.info("wow , there are {} msgs to count !!!".format(msg_len))
 
     for i in msg_list:
+        logger.debug(f"processing msg {i.plain_text}")
+        if keyword:
+            if keyword not in i.plain_text:
+                continue
         try:
             lst[str(i.session_persist_id)] += 1
         except KeyError:
