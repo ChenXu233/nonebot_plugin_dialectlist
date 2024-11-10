@@ -26,15 +26,16 @@ nonebot-plugin-dialectlist
 
 ## 💿 安装
 
-通过`pip`或`nb`安装；
+通过`pip`或`nb`安装：
+- 通过 pip 安装
+```python
+pip install nonebot-plugin-dialectlist
+```
+- 通过 nb-cli 安装
+```python
+nb plugin install nonebot-plugin-dialectlist
+```
 
->**通过 pip **安装
-
-`pip install nonebot-plugin-dialectlist`
-
->**通过 nb **安装
-
-`nb plugin install nonebot-plugin-dialectlist`
 
 ### ✅ 插件依赖于
 
