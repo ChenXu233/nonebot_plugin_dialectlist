@@ -85,6 +85,12 @@ async def _build_cache(bot: Bot, event: Event):
     await saa.Text("重建缓存完成。").send(reply=True)
 
 
+b_cmd = on_alconna(
+    Alconna(
+        "看看他的B话",
+    )
+)
+
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
@@ -267,7 +273,7 @@ async def handle_rank(
     t1 = t.time()
     rank2 = await get_user_infos(bot, event, rank)
     logger.debug(f"获取用户信息花费时间:{t.time() - t1}")
-    
+
     string: str = ""
     if plugin_config.show_text_rank:
 
@@ -275,7 +281,7 @@ async def handle_rank(
             string += f"关于{keyword}的话痨榜结果：\n"
         else:
             string += "话痨榜：\n"
-            
+
         for i in rank2:
             logger.debug(i.user_name)
         for i in range(len(rank2)):
@@ -300,5 +306,8 @@ async def handle_rank(
         msg += suffix
     if not msg:
         await saa.Text("你把可视化都关了哪来的排行榜？").finish()
-
-    await msg.finish(reply=True)
+        
+    if plugin_config.aggregate_transmission:
+        await saa.AggregatedMessageFactory([msg]).finish(reply=True)
+    else:
+        await msg.finish(reply=True)
