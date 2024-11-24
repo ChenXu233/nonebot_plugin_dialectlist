@@ -23,7 +23,10 @@ from nonebot.params import Arg, Depends
 from nonebot.adapters import Bot, Event
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
 from nonebot_plugin_alconna import (
+    At,
     Args,
+    Field,
+    Match,
     Option,
     Alconna,
     on_alconna,
@@ -87,9 +90,52 @@ async def _build_cache(bot: Bot, event: Event):
 
 b_cmd = on_alconna(
     Alconna(
-        "看看他的B话",
-    )
+        "看看B话",
+        Args["at", [str, At], Field(completion=lambda: "请想要查询的人的QQ号")],
+        Option("-g|--group_id", Args["group_id?", str]),
+        Option("-k|--keyword", Args["keyword?", str])
+    ),
+    aliases={"kkb"},
+    use_cmd_start=True,
 )
+
+@b_cmd.handle()
+async def handle_b_cmd(
+    at:Match[str|At],
+    group_id: Match[str],
+    keyword: Match[str],
+    session: Session = Depends(extract_session),
+):
+    id = at.result
+    if isinstance(id, At):
+        id = id.target
+    if group_id.available:
+        gid = group_id.result
+    else:
+        gid = session.id2
+    
+    if not gid:
+        await b_cmd.finish("请指定群号。")
+        
+    if keyword.available:
+        keywords = keyword.result
+    else:
+        keywords = None
+
+    messages = await get_message_records(
+        id1s=[id],
+        id2s=[gid],
+        id_type=SessionIdType.GROUP,
+        include_bot_id=False,
+        include_bot_type=False,
+        types=["message"],  # 排除机器人自己发的消息
+        exclude_id1s=plugin_config.excluded_people,
+    )
+    d = msg_counter(messages, keywords)
+    rank = got_rank(d)
+    
+    await saa.Text(f"该用户在群{gid}的B话数量为{rank[0][1]}。").send(reply=True)
+
 
 rank_cmd = on_alconna(
     Alconna(

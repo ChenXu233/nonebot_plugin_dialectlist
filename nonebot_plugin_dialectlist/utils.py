@@ -94,7 +94,7 @@ def msg_counter(
     logger.info("wow , there are {} msgs to count !!!".format(msg_len))
 
     for i in msg_list:
-        logger.debug(f"processing msg {i.plain_text}")
+        # logger.debug(f"processing msg {i.plain_text}")
         if keyword:
             if keyword not in i.plain_text:
                 continue
