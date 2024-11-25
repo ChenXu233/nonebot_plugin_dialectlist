@@ -354,6 +354,6 @@ async def handle_rank(
         await saa.Text("你把可视化都关了哪来的排行榜？").finish()
         
     if plugin_config.aggregate_transmission:
-        await saa.AggregatedMessageFactory([msg]).finish(reply=True)
+        await saa.AggregatedMessageFactory([msg]).finish()
     else:
         await msg.finish(reply=True)
