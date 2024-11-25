@@ -1,4 +1,5 @@
 import os
+import re
 import httpx
 import asyncio
 import unicodedata
@@ -96,7 +97,8 @@ def msg_counter(
     for i in msg_list:
         # logger.debug(f"processing msg {i.plain_text}")
         if keyword:
-            if keyword not in i.plain_text:
+            match = re.search(keyword, i.plain_text)
+            if not match:
                 continue
         try:
             lst[str(i.session_persist_id)] += 1
