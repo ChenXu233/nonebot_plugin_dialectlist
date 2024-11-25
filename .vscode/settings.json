@@ -19,6 +19,7 @@
         "pygal",
         "sqlalchemy",
         "timecost",
+        "uninfo",
         "userinfo",
         "whereclause",
         "xaxis",

@@ -95,15 +95,16 @@ b_cmd = on_alconna(
         "看看B话",
         Args["at", [str, At], Field(completion=lambda: "请想要查询的人的QQ号")],
         Option("-g|--group_id", Args["group_id?", str]),
-        Option("-k|--keyword", Args["keyword?", str])
+        Option("-k|--keyword", Args["keyword?", str]),
     ),
     aliases={"kkb"},
     use_cmd_start=True,
 )
 
+
 @b_cmd.handle()
 async def handle_b_cmd(
-    at:Match[str|At],
+    at: Match[str | At],
     group_id: Match[str],
     keyword: Match[str],
     uninfo: Uninfo,
@@ -116,10 +117,10 @@ async def handle_b_cmd(
         gid = group_id.result
     else:
         gid = session.id2
-    
+
     if not gid:
         await b_cmd.finish("请指定群号。")
-        
+
     if keyword.available:
         keywords = keyword.result
     else:
@@ -137,9 +138,13 @@ async def handle_b_cmd(
     d = msg_counter(messages, keywords)
     rank = got_rank(d)
     if not rank:
-        await b_cmd.finish(f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为0。")
-    
-    await saa.Text(f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为{rank[0][1]}。").send(reply=True)
+        await b_cmd.finish(
+            f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为0。"
+        )
+
+    await saa.Text(
+        f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为{rank[0][1]}。"
+    ).send(reply=True)
 
 
 rank_cmd = on_alconna(
@@ -357,7 +362,7 @@ async def handle_rank(
         msg += suffix
     if not msg:
         await saa.Text("你把可视化都关了哪来的排行榜？").finish()
-        
+
     if plugin_config.aggregate_transmission:
         await saa.AggregatedMessageFactory([msg]).finish()
     else:
