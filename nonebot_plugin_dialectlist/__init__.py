@@ -133,8 +133,10 @@ async def handle_b_cmd(
     )
     d = msg_counter(messages, keywords)
     rank = got_rank(d)
+    if not rank:
+        await b_cmd.finish(f"该用户在群{gid}关于{keyword}的B话数量为0。")
     
-    await saa.Text(f"该用户在群{gid}的B话数量为{rank[0][1]}。").send(reply=True)
+    await saa.Text(f"该用户在群{gid}关于{keyword}的B话数量为{rank[0][1]}。").send(reply=True)
 
 
 rank_cmd = on_alconna(
