@@ -5,6 +5,7 @@ require("nonebot_plugin_apscheduler")
 require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_userinfo")
 require("nonebot_plugin_alconna")
+require("nonebot_plugin_uninfo")
 require("nonebot_plugin_cesaa")
 
 import re
@@ -33,6 +34,7 @@ from nonebot_plugin_alconna import (
 )
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_session import Session, SessionIdType, extract_session
+from nonebot_plugin_uninfo import Uninfo
 
 from .storage import get_cache, build_cache
 from .config import Config, plugin_config
@@ -104,6 +106,7 @@ async def handle_b_cmd(
     at:Match[str|At],
     group_id: Match[str],
     keyword: Match[str],
+    uninfo: Uninfo,
     session: Session = Depends(extract_session),
 ):
     id = at.result
@@ -134,9 +137,9 @@ async def handle_b_cmd(
     d = msg_counter(messages, keywords)
     rank = got_rank(d)
     if not rank:
-        await b_cmd.finish(f"该用户在群{gid}关于{keyword}的B话数量为0。")
+        await b_cmd.finish(f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为0。")
     
-    await saa.Text(f"该用户在群{gid}关于{keyword}的B话数量为{rank[0][1]}。").send(reply=True)
+    await saa.Text(f"该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为{rank[0][1]}。").send(reply=True)
 
 
 rank_cmd = on_alconna(
