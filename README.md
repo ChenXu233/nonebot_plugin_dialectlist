@@ -54,15 +54,20 @@ nb plugin install nonebot-plugin-dialectlist
 
 在 .env 中，可以添加以下配置项
 ```python
-dialectlist__string_format = "第{index}名：\n{nickname},{chatdatanum}条消息、\n" #消息格式
-dialectlist__get_num = 10 #获取人数数量
-dialectlist__visualization = True #是否可视化
-# dialectlist__visualization_type = "圆环图" #可视化方案 （不再支持）
-dialectlist__font = "SimHei" #字体格式
-dialectlist__excluded_people = [] #排除的人的 QQ 号（或频道号？（未经测试）)
-dialectlist__excluded_self = True #是否排除机器人自己 QQ
-dialectlist__suffix: bool = False  # 是否显示后缀
-dialectlist__string_suffix: str = "统计花费时间{timecost}"  # 消息格式后缀
+dialectlist__get_num: int = 5  # 获取人数数量
+dialectlist__font: str = "SimHei"  # 字体格式
+dialectlist__suffix: bool = True  # 是否显示后缀
+dialectlist__excluded_self: bool = True  # 是否排除自己
+dialectlist__visualization: bool = True  # 是否可视化
+dialectlist__show_text_rank: bool = True  # 是否显示文本排名
+dialectlist__counting_cache: bool = False  # 计数缓存(能够提高回复速度)
+dialectlist__excluded_people: List[str] = []  # 排除的人的QQ号
+dialectlist__use_user_info_cache: bool = False  # 是否使用用户信息缓存
+dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
+dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
+dialectlist__string_suffix: str = "统计花费时间:{timecost}秒"  # 消息格式后缀
+dialectlist__template_path: str = "./template/rank_template.j2"  # 模板路径
+dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
 ```
 💭也可以不进行配置，这将会使插件按照默认配置运行
 
@@ -125,6 +130,9 @@ __！！注意！！__
 
 `/kkb 114514 1919810 ♂`
 `/kkb @man -k ♂`
+
+> [!IMPORTANT]
+> 关键词支持正则表达式！
 
 ## 💪 目前支持的平台
 
