@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Union
-from sqlalchemy import Integer
+
 from nonebot_plugin_orm import Model
 from nonebot_plugin_userinfo import UserInfo
+from sqlalchemy import Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 

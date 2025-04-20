@@ -10,46 +10,37 @@ require("nonebot_plugin_cesaa")
 
 import re
 import time as t
-import nonebot_plugin_saa as saa
-
-from typing import Union, Optional
 from datetime import datetime, timedelta
+from typing import Optional, Union
+
+import nonebot_plugin_saa as saa
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
-
 from nonebot import on_command
-from nonebot.log import logger
-from nonebot.typing import T_State
-from nonebot.params import Arg, Depends
 from nonebot.adapters import Bot, Event
+from nonebot.log import logger
+from nonebot.params import Arg, Depends
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
-from nonebot_plugin_alconna import (
-    At,
-    Args,
-    Field,
-    Match,
-    Option,
-    Alconna,
-    on_alconna,
-)
+from nonebot.typing import T_State
+from nonebot_plugin_alconna import Alconna, Args, At, Field, Match, Option, on_alconna
 from nonebot_plugin_chatrecorder import get_message_records
-from nonebot_plugin_session import Session, SessionIdType, extract_session
-from nonebot_plugin_uninfo import Uninfo
+from nonebot_plugin_session import SessionIdType, extract_session
+from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
-from .storage import get_cache, build_cache
 from .config import Config, plugin_config
-from .usage import __usage__
+from .storage import build_cache, get_cache
 from .time import (
     get_datetime_fromisoformat_with_timezone,
     get_datetime_now_with_timezone,
     parse_datetime,
 )
+from .usage import __usage__
 from .utils import (
+    get_rank_image,
+    get_user_infos,
     got_rank,
     msg_counter,
-    get_rank_image,
     persist_id2user_id,
-    get_user_infos,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -59,7 +50,9 @@ __plugin_meta__ = PluginMetadata(
     homepage="https://github.com/ChenXu233/nonebot_plugin_dialectlist",
     type="application",
     supported_adapters=inherit_supported_adapters(
-        "nonebot_plugin_chatrecorder", "nonebot_plugin_saa", "nonebot_plugin_alconna"
+        "nonebot_plugin_chatrecorder",
+        "nonebot_plugin_saa",
+        "nonebot_plugin_alconna",
     ),
     config=Config,
 )
@@ -108,7 +101,7 @@ async def handle_b_cmd(
     group_id: Match[str],
     keyword: Match[str],
     uninfo: Uninfo,
-    session: Session = Depends(extract_session),
+    session: Session = Depends(get_session),
 ):
     id = at.result
     if isinstance(id, At):
@@ -116,7 +109,7 @@ async def handle_b_cmd(
     if group_id.available:
         gid = group_id.result
     else:
-        gid = session.id2
+        gid = session.scene.id
 
     if not gid:
         await b_cmd.finish("请指定群号。")
@@ -126,14 +119,13 @@ async def handle_b_cmd(
     else:
         keywords = None
 
+    messages = await get_message_records(scene_ids=[gid], user_ids=[id])
+
     messages = await get_message_records(
-        id1s=[id],
-        id2s=[gid],
-        id_type=SessionIdType.GROUP,
-        include_bot_id=False,
-        include_bot_type=False,
+        scene_ids=[gid],
+        user_ids=[id],
         types=["message"],  # 排除机器人自己发的消息
-        exclude_id1s=plugin_config.excluded_people,
+        exclude_user_ids=plugin_config.excluded_people,
     )
     d = msg_counter(messages, keywords)
     rank = got_rank(d)
@@ -150,7 +142,10 @@ async def handle_b_cmd(
 rank_cmd = on_alconna(
     Alconna(
         "B话榜",
-        Args["type?", ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"]][
+        Args[
+            "type?",
+            ["今日", "昨日", "本周", "上周", "本月", "上月", "年度", "历史"],
+        ][
             "time?",
             str,
         ],
@@ -199,7 +194,7 @@ async def _group_message(
     dt = get_datetime_now_with_timezone()
 
     if not group_id:
-        group_id = session.id2
+        group_id = session.scene.id
         logger.debug(f"session id2: {group_id}")
     if group_id:
         state["group_id"] = group_id
@@ -281,12 +276,11 @@ async def handle_rank(
     start: datetime = Arg(),
     stop: datetime = Arg(),
 ):
-
     if id := state["group_id"]:
         id = str(id)
         logger.debug(f"group_id: {id}")
     else:
-        id = session.id2
+        id = session.scene.id
         logger.debug(f"group_id: {id}")
 
     if not id:
@@ -303,14 +297,11 @@ async def handle_rank(
     else:
         t1 = t.time()
         messages = await get_message_records(
-            id2s=[id],
-            id_type=SessionIdType.GROUP,
-            include_bot_id=False,
-            include_bot_type=False,
+            scene_ids=[id],
             types=["message"],  # 排除机器人自己发的消息
             time_start=start,
             time_stop=stop,
-            exclude_id1s=plugin_config.excluded_people,
+            exclude_user_ids=plugin_config.excluded_people,
         )
         raw_rank = msg_counter(messages, keyword)
         logger.debug(f"获取计数消息花费时间:{t.time() - t1}")
@@ -332,7 +323,6 @@ async def handle_rank(
 
     string: str = ""
     if plugin_config.show_text_rank:
-
         if keyword:
             string += f"关于{keyword}的话痨榜结果：\n"
         else:

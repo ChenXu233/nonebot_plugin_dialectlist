@@ -1,31 +1,28 @@
+import asyncio
 import os
 import re
-import httpx
-import asyncio
 import unicodedata
-
 from typing import Dict, List, Optional
+
+import httpx
+from nonebot.adapters import Bot, Event
+from nonebot.compat import model_dump
+from nonebot.log import logger
+from nonebot.matcher import Matcher
+from nonebot.params import Depends
+from nonebot_plugin_chatrecorder import MessageRecord
+from nonebot_plugin_htmlrender import template_to_pic
+from nonebot_plugin_localstore import get_cache_dir
+from nonebot_plugin_orm import get_session
+from nonebot_plugin_session import Session, SessionLevel, extract_session
+from nonebot_plugin_session_orm import SessionModel
+from nonebot_plugin_userinfo import UserInfo, get_user_info
+from nonebot_plugin_userinfo.exception import NetworkError
 from sqlalchemy import or_, select
 from sqlalchemy.sql import ColumnElement
 
-from nonebot.log import logger
-from nonebot.params import Depends
-from nonebot.compat import model_dump
-from nonebot.matcher import Matcher
-from nonebot.adapters import Bot, Event
-
-from nonebot_plugin_orm import get_session
-from nonebot_plugin_session import Session, SessionLevel, extract_session
-from nonebot_plugin_userinfo import get_user_info, UserInfo
-from nonebot_plugin_userinfo.exception import NetworkError
-from nonebot_plugin_localstore import get_cache_dir
-from nonebot_plugin_htmlrender import template_to_pic
-from nonebot_plugin_session_orm import SessionModel
-from nonebot_plugin_chatrecorder import MessageRecord
-
-
-from .model import UserRankInfo
 from .config import plugin_config
+from .model import UserRankInfo
 
 cache_path = get_cache_dir("nonebot_plugin_dialectlist")
 
@@ -40,7 +37,11 @@ async def persist_id2user_id(ids: List) -> List[str]:
     user_ids = []
     async with get_session() as db_session:
         for i in ids:
-            user_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id == i])))).id1  # type: ignore
+            user_id = (
+                await db_session.scalar(
+                    select(SessionModel).where(or_(*[SessionModel.id == i]))
+                )
+            ).id1  # type: ignore
             user_ids.append(user_id)
     return user_ids
 
@@ -61,7 +62,11 @@ async def group_id2persist_id(ids: List[str]) -> List[int]:
     persist_ids = []
     async with get_session() as db_session:
         for i in ids:
-            persist_id = (await db_session.scalar(select(SessionModel).where(or_(*[SessionModel.id2 == i])))).id  # type: ignore
+            persist_id = (
+                await db_session.scalar(
+                    select(SessionModel).where(or_(*[SessionModel.id2 == i]))
+                )
+            ).id  # type: ignore
             persist_ids.append(persist_id)
     return persist_ids
 
@@ -232,7 +237,6 @@ async def get_user_infos(
     rank: List,
     use_cache: bool = plugin_config.use_user_info_cache,
 ) -> List[UserRankInfo]:
-
     user_ids = [i[0] for i in rank]
     pool = [get_user_info(bot, event, id, use_cache) for id in user_ids]
     user_infos = await asyncio.gather(*pool)
@@ -254,7 +258,6 @@ async def get_user_infos(
     total = sum([i[1] for i in rank])
     rank2 = []
     for i in range(len(rank)):
-
         user_info = user_infos[i]
         if not user_info:
             user_info = get_default_user_info()

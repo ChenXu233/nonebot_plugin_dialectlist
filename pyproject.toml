@@ -2,11 +2,9 @@
 name = "nonebot-plugin-dialectlist"
 version = "2.6.2"
 description = "看看你群群友有多能说"
-authors = [
-    {name = "Chen_Xu233", email = "woyerpa@outlook.com"},
-]
+authors = [{ name = "Chen_Xu233", email = "woyerpa@outlook.com" }]
 dependencies = [
-    "nonebot-plugin-chatrecorder>=0.6.0,<0.7.0",
+    "nonebot-plugin-chatrecorder>=0.7.0",
     "nonebot-plugin-orm[default]",
     "nonebot-plugin-apscheduler>=0.4.0",
     "nonebot-plugin-alconna>=0.50.2",
@@ -19,7 +17,7 @@ dependencies = [
 ]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
 
 [project.optional-dependencies]
@@ -30,9 +28,7 @@ dev = [
     "nb-cli>=0.7.6",
     "py-spy>=0.3.14",
 ]
-Test = [
-    "nonebot-adapter-onebot>=2.4.4",
-]
+Test = ["nonebot-adapter-onebot>=2.4.4"]
 
 [tool.pdm]
 distribution = true
