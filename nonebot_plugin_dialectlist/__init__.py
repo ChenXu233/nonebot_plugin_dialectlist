@@ -136,11 +136,11 @@ async def handle_b_cmd(
 	rank = got_rank(d)
 	if not rank:
 		await b_cmd.finish(
-			f'该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为0。'
+			f'该用户在群“{uninfo.scene.name}”关于“{keyword.result}”的B话数量为0。'
 		)
 
 	await saa.Text(
-		f'该用户在群“{uninfo.scene.name}”关于“{keyword}”的B话数量为{rank[0][1]}。'
+		f'该用户在群“{uninfo.scene.name}”关于“{keyword.result}”的B话数量为{rank[0][1]}。'
 	).send(reply=True)
 
 
