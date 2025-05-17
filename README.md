@@ -13,13 +13,15 @@ nonebot-plugin-dialectlist
   <a href="https://pypi.python.org/pypi/nonebot-plugin-dialectlist">
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-dialectlist.svg" alt="pypi">
   </a>
-  
+
   <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
   
   <a href="https://qm.qq.com/q/Yty2yc9Bee">
     <img src="https://img.shields.io/badge/QQ%E7%BE%A4-1128359833-orange?style=flat-square" alt="QQ Chat Group">
   </a>
 </p>
+
+[![wakatime](https://wakatime.com/badge/user/114aee90-a5f9-49aa-b441-9eca7eebfda3/project/68aaa2a1-fb8a-4b00-bb66-ee67e8a3f3b0.svg)](https://wakatime.com/badge/user/114aee90-a5f9-49aa-b441-9eca7eebfda3/project/68aaa2a1-fb8a-4b00-bb66-ee67e8a3f3b0)
 
 \>💬**看看群友们这些天在群里水了多少话**💬<
 </div>
