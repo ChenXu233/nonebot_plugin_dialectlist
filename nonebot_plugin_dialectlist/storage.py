@@ -9,10 +9,10 @@ from nonebot.message import event_postprocessor
 from nonebot.params import Depends
 from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_chatrecorder.utils import remove_timezone
+from nonebot_plugin_uninfo import Session, get_session
+from nonebot_plugin_uninfo.orm import SessionModel,get_session_persist_id
 from nonebot_plugin_localstore import get_data_file
 from nonebot_plugin_orm import get_session
-from nonebot_plugin_session import Session, extract_session
-from nonebot_plugin_session_orm import SessionModel, get_session_persist_id
 from sqlalchemy import delete, or_, select
 
 from .config import plugin_config
@@ -131,3 +131,6 @@ async def _(bot: Bot, event: Event, session: Session = Depends(extract_session))
             db_session.add(user_cache)
         await db_session.commit()
     logger.debug("已计入缓存")
+
+
+# TODO: 修复缓存储存

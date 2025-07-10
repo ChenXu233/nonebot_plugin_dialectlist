@@ -35,7 +35,7 @@ from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
 from .config import Config, plugin_config
-from .storage import build_cache, get_cache
+# from .storage import build_cache, get_cache
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
 	get_datetime_now_with_timezone,
@@ -85,7 +85,8 @@ build_cache_cmd = on_command('build_cache', aliases={'重建缓存'}, block=True
 
 @build_cache_cmd.handle()
 async def _build_cache(bot: Bot, event: Event):
-	await saa.Text('正在重建缓存，请稍等。').send(reply=True)
+    return 
+	await saa.Text('正在重建缓存，请稍等。').send(reply=True) # type: ignore
 	await build_cache()
 	await saa.Text('重建缓存完成。').send(reply=True)
 
@@ -302,11 +303,12 @@ async def handle_rank(
 	keyword = state['keyword']
 
 	if plugin_config.counting_cache:
-		if keyword:
-			await saa.Text('已开启缓存~缓存不支持关键词查询哦').finish()
-		t1 = t.time()
-		raw_rank = await get_cache(start, stop, id)
-		logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
+		await saa.Text("缓存暂不支持").finish()
+		# if keyword:
+		# 	await saa.Text('已开启缓存~缓存不支持关键词查询哦').finish()
+		# t1 = t.time()
+		# raw_rank = await get_cache(start, stop, id)
+		# logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
 	else:
 		t1 = t.time()
 		messages = await get_message_records(
