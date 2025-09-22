@@ -12,7 +12,7 @@ dependencies = [
     "nonebot-plugin-userinfo>=0.2.6",
     "nonebot-plugin-htmlrender>=0.3.3",
     "nonebot2>=2.3.2",
-    "pillow>=10.4.0",
+    "pillow>=11.3.0",
     "nonebot-plugin-uninfo>=0.1.1",
 ]
 requires-python = ">=3.9,<4.0"
@@ -23,9 +23,9 @@ license = { text = "MIT" }
 [project.optional-dependencies]
 dev = [
     "ruff>=0.5.5",
-    "setuptools>=71.1.0",
-    "twine>=5.1.0",
-    "nb-cli>=0.7.6",
+    "setuptools>=80.9.0",
+    "twine>=6.2.0",
+    "nb-cli>=1.4.2",
     "py-spy>=0.3.14",
 ]
 Test = ["nonebot-adapter-onebot>=2.4.4"]

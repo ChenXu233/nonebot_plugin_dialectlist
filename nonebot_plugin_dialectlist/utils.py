@@ -69,7 +69,7 @@ def got_rank(msg_dict: Dict[int, int]) -> List[List[Any]]:
 	while len(rank) < plugin_config.get_num:
 		try:
 			max_key = max(msg_dict.items(), key=lambda x: x[1])
-			rank.append(tuple(max_key))
+			rank.append(list(max_key))
 			msg_dict.pop(max_key[0])
 		except ValueError:
 			logger.error(

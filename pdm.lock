@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:42cf686b0618c9e80b1aae28a90a3d694e17da96b6a208ff2720f11d88ef4e4f"
+content_hash = "sha256:1e8f0e2bc32d8cf861a8342b7d90d683f0efc9cd94ac461dc65363788a365902"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.13"
@@ -1805,7 +1805,7 @@ files = [
 
 [[package]]
 name = "twine"
-version = "6.1.0"
+version = "6.2.0"
 summary = ""
 dependencies = [
     "id",
@@ -1820,8 +1820,8 @@ dependencies = [
     "urllib3",
 ]
 files = [
-    {file = "twine-6.1.0-py3-none-any.whl", hash = "sha256:a47f973caf122930bf0fbbf17f80b83bc1602c9ce393c7845f289a3001dc5384"},
-    {file = "twine-6.1.0.tar.gz", hash = "sha256:be324f6272eff91d07ee93f251edf232fc647935dd585ac003539b42404a8dbd"},
+    {file = "twine-6.2.0-py3-none-any.whl", hash = "sha256:418ebf08ccda9a8caaebe414433b0ba5e25eb5e4a927667122fbe8f829f985d8"},
+    {file = "twine-6.2.0.tar.gz", hash = "sha256:e5ed0d2fd70c9959770dce51c8f39c8945c574e18173a7b81802dab51b4b75cf"},
 ]
 
 [[package]]
