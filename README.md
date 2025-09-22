@@ -6,7 +6,8 @@
 
 <div align="center">
 
-# 📃话痨排行榜
+# 📃 话痨排行榜
+
 nonebot-plugin-dialectlist
 
 <p align="center">
@@ -24,20 +25,24 @@ nonebot-plugin-dialectlist
 [![wakatime](https://wakatime.com/badge/user/114aee90-a5f9-49aa-b441-9eca7eebfda3/project/68aaa2a1-fb8a-4b00-bb66-ee67e8a3f3b0.svg)](https://wakatime.com/badge/user/114aee90-a5f9-49aa-b441-9eca7eebfda3/project/68aaa2a1-fb8a-4b00-bb66-ee67e8a3f3b0)
 
 \>💬**看看群友们这些天在群里水了多少话**💬<
+
 </div>
 
 ## 💿 安装
 
 通过`pip`或`nb`安装：
+
 - 通过 pip 安装
+
 ```bash
 pip install nonebot-plugin-dialectlist
 ```
+
 - 通过 nb-cli 安装
+
 ```bash
 nb plugin install nonebot-plugin-dialectlist
 ```
-
 
 ### ✅ 插件依赖于
 
@@ -48,13 +53,14 @@ nb plugin install nonebot-plugin-dialectlist
 5. [nonebot-plugin-chatrecorder](https://github.com/noneplugin/nonebot-plugin-chatrecorder) ————实现消息储存
 6. [nonebot-plugin-cesaa](https://github.com/MountainDash/nonebot-plugin-send-anything-anywhere) ————实现多平台
 
- **⚠注意** 若先前没有安装过```nonebot-plugin-chatrecorder```或者```nonebot-plugin-orm```，则会在启动时报错，请按报错的提示安装数据库！
- 
+**⚠ 注意** 若先前没有安装过`nonebot-plugin-chatrecorder`或者`nonebot-plugin-orm`，则会在启动时报错，请按报错的提示安装数据库！
+
 ## ⚙ 配置
 
 需要**提前配置**本插件所**依赖的插件**！
 
 在 .env 中，可以添加以下配置项
+
 ```python
 dialectlist__get_num: int = 5  # 获取人数数量
 dialectlist__font: str = "SimHei"  # 字体格式
@@ -62,73 +68,74 @@ dialectlist__suffix: bool = True  # 是否显示后缀
 dialectlist__excluded_self: bool = True  # 是否排除自己
 dialectlist__visualization: bool = True  # 是否可视化
 dialectlist__show_text_rank: bool = True  # 是否显示文本排名
-dialectlist__counting_cache: bool = False  # 计数缓存(能够提高回复速度)
-dialectlist__excluded_people: List[str] = []  # 排除的人的QQ号
+dialectlist__excluded_people: List[str] = []  # 排除的人的 QQ 号
 dialectlist__use_user_info_cache: bool = False  # 是否使用用户信息缓存
 dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
 dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
-dialectlist__string_suffix: str = "统计花费时间:{timecost}秒"  # 消息格式后缀
+dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
 dialectlist__template_path: str = "./template/rank_template.j2"  # 模板路径
-dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
+dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息、n"  # 消息格式
 ```
-💭也可以不进行配置，这将会使插件按照默认配置运行
 
- ### ⚠ 注意！！
+💭 也可以不进行配置，这将会使插件按照默认配置运行
+
+### ⚠ 注意！！
 
 > 在旧版插件（2.0.0 以下）中，dialectlist 与后面的配置项只隔了一个下划线，若更新到新版本以后需要俩个下划线。
 
-> 由于插件依赖chatrecord多次引入爆炸性修改，建议在遇到问题后优先尝试降级chatrecord插件
+> 由于插件依赖 chatrecord 多次引入爆炸性修改，建议在遇到问题后优先尝试降级 chatrecord 插件
 
-## 🗨命令
-__！！注意！！__
+## 🗨 命令
+
+**！！注意！！**
 新版本指令调用方式改变，改为更易理解也更好打的 B 话榜。
 同时也可以用类似 `/今日废话榜` 的方式（只要改前面的就好了）（算是给 [盘古之白](https://github.com/vinta/pangu.js) 风格爱好者的福利吧？）
 
-### 🎨一般用法
+### 🎨 一般用法
 
-#### B话榜
+#### B 话榜
 
--`/B话榜` ————看看有史以来（机器人存在以来）群友们发了多少消息！ （好像没写）
+-`/B 话榜` ————看看有史以来（机器人存在以来）群友们发了多少消息！ （好像没写）
 
--`/今日B话榜` ————看看今天的群友发了多少消息！
+-`/今日 B 话榜` ————看看今天的群友发了多少消息！
 
--`/昨日B话榜` ————看看昨天的群友发了多少消息！
+-`/昨日 B 话榜` ————看看昨天的群友发了多少消息！
 
--`/前日B话榜` ————看看前天的群友发了多少消息！
+-`/前日 B 话榜` ————看看前天的群友发了多少消息！
 
--`/本周B话榜` ————看看本周的群友发了多少消息！
-  
--`/上周B话榜` ————看看上周的群友发了多少消息！
+-`/本周 B 话榜` ————看看本周的群友发了多少消息！
 
--`/本月B话榜` ————看看这个月的群友发了多少消息！
+-`/上周 B 话榜` ————看看上周的群友发了多少消息！
 
--`/年度B话榜` ————看看今年的群友发了多少消息！
+-`/本月 B 话榜` ————看看这个月的群友发了多少消息！
 
--`/历史B话榜` ————看看历史上（机器人存在以来）的群友发了多少消息！
+-`/年度 B 话榜` ————看看今年的群友发了多少消息！
 
-#### 看看B话（kkb）
+-`/历史 B 话榜` ————看看历史上（机器人存在以来）的群友发了多少消息！
 
--`/看看B话 [@某人|QQ号]` ————看看这个b人在这个b群发了多少b话！
+#### 看看 B 话（kkb）
 
-### 🚀进阶用法
+-`/看看 B 话 [@某人|QQ 号]` ————看看这个 b 人在这个 b 群发了多少 b 话！
 
-#### B话榜
+### 🚀 进阶用法
 
-`/{时间类型（今日|年度）?}{B话榜|废话榜} {时间类型？} {ISO8601 格式时间 ?} {群号} {关键词}`
+#### B 话榜
 
-如：`/B话榜 历史 2024-01-01~2024-01-02 12345678 女装`
+`/{时间类型（今日|年度）?}{B 话榜|废话榜} {时间类型？} {ISO8601 格式时间 ?} {群号} {关键词}`
 
-也可以 `/{时间类型（今日|年度）?}{B话榜|废话榜} {时间类型？} {ISO8601 格式时间 ?} -g {群号} -k {关键词}`
+如：`/B 话榜 历史 2024-01-01~2024-01-02 12345678 女装`
+
+也可以 `/{时间类型（今日|年度）?}{B 话榜|废话榜} {时间类型？} {ISO8601 格式时间 ?} -g {群号} -k {关键词}`
 
 以下调用方法均合法：
 
-`/今日B话榜 -g 12345678 -k 女装`
-`/昨日B话榜 -k 女装`
-`/本周B话榜 -g 12345678`
+`/今日 B 话榜 -g 12345678 -k 女装`
+`/昨日 B 话榜 -k 女装`
+`/本周 B 话榜 -g 12345678`
 
-#### 看看B话
+#### 看看 B 话
 
-`/看看B话 {@|QQ号} {群号？} {关键词？}`
+`/看看 B 话 {@|QQ 号} {群号？} {关键词？}`
 
 以下调用方法均合法：
 
@@ -140,28 +147,28 @@ __！！注意！！__
 
 ## 💪 目前支持的平台
 
-| 平台 | 是否经过测试 | 是否能够正常工作 | 测试环境 |
-|:-----:|:----:|:----:| :----: |
-| Onebot | ✅ | ✅ | NapCat + Window11|
-| 飞书  | ❌ | ❓ | 🤔 |
-| Red  | ❌ | ❓ | 🤔 |
-| DoDo  | ❌ | ❓ | 🤔 |
-| Mirai  | ❌ | ❓ | 🤔 |
-| 开黑啦  | ❌ | ❓ | 🤔 |
-| Kritor  | ❌ | ❓ | 🤔 |
-| Ntchat  | ❌ | ❓ | 🤔 |
-| Satori  | ❌ | ❓ | 🤔 |
-| Telegram | ❌ | ❓ | 🤔  |
-| Discord  | ❌ | ❓ | 🤔 |
-| Tailchat  | ❌ | ❓ | 🤔 |
-| QQ 官方接口  | ❌ | ❓ | 🤔 |
-| Rocket.Chat  | ❌ | ❓ | 🤔 |
+|    平台     | 是否经过测试 | 是否能够正常工作 |     测试环境      |
+| :---------: | :----------: | :--------------: | :---------------: |
+|   Onebot    |      ✅      |        ✅        | NapCat + Window11 |
+|    飞书     |      ❌      |        ❓        |        🤔         |
+|     Red     |      ❌      |        ❓        |        🤔         |
+|    DoDo     |      ❌      |        ❓        |        🤔         |
+|    Mirai    |      ❌      |        ❓        |        🤔         |
+|   开黑啦    |      ❌      |        ❓        |        🤔         |
+|   Kritor    |      ❌      |        ❓        |        🤔         |
+|   Ntchat    |      ❌      |        ❓        |        🤔         |
+|   Satori    |      ❌      |        ❓        |        🤔         |
+|  Telegram   |      ❌      |        ❓        |        🤔         |
+|   Discord   |      ❌      |        ❓        |        🤔         |
+|  Tailchat   |      ❌      |        ❓        |        🤔         |
+| QQ 官方接口 |      ❌      |        ❓        |        🤔         |
+| Rocket.Chat |      ❌      |        ❓        |        🤔         |
 
 - 如果你测试过能够使用，请在 Issue 中指出
 
-## 📦另外
+## 📦 另外
 
-### 😳加入作者的 BUG 反馈群 ~~（🥵女装粉丝群）~~
+### 😳 加入作者的 BUG 反馈群 ~~（🥵 女装粉丝群）~~
 
 [群连接](https://qm.qq.com/q/Yty2yc9Bee)
 
@@ -174,10 +181,9 @@ __！！注意！！__
 
 ![9c149e99ca747c13892be3f9fbeedf31](https://github.com/user-attachments/assets/d02d108c-1ab3-4ad1-9123-c1a98862e627)
 
+### 💕 感谢
 
-### 💕感谢
-
-本插件的__init__.py 中的处理函数参考了词云中的方法 ~~（其实大部分都是 Ctrl+C Ctr+V）~~
+本插件的**init**.py 中的处理函数参考了词云中的方法 ~~（其实大部分都是 Ctrl+C Ctr+V）~~
 
 [nonebot-plugin-wordcloud](https://github.com/he0119/nonebot-plugin-wordcloud)
 
@@ -194,7 +200,6 @@ __！！注意！！__
 - [x] 更好看的图片渲染
 
 - [x] 添加一些全新的可配置项
-      
 - [x] 尝试利用 jinja2 模板引擎制作可视化图片
 
 - [x] 私聊的查询（超级用户可以任意查询群聊的信息）一半完成
@@ -204,9 +209,9 @@ __！！注意！！__
 - [x] 查询带某关键词的消息量
 
 - [x] 合并转发
-  
- 待补充。.....
 
+待补充。.....
 
-### 👾题外话
+### 👾 题外话
+
 ~~整个项目快被我写成屎山了~~
