@@ -16,7 +16,6 @@ from typing import Optional, Union
 import nonebot_plugin_saa as saa
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
-from nonebot import on_command
 from nonebot.adapters import Bot, Event
 from nonebot.log import logger
 from nonebot.params import Arg, Depends
@@ -31,10 +30,10 @@ from nonebot_plugin_alconna import (
 	Option,
 	on_alconna,
 )
-from nonebot_plugin_chatrecorder import get_message_records
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
 from .config import Config, plugin_config
+
 # from .storage import build_cache, get_cache
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
@@ -46,8 +45,8 @@ from .utils import (
 	get_rank_image,
 	get_user_infos,
 	got_rank,
-	msg_counter,
 	persist_id2user_id,
+	get_user_message_counts,
 )
 
 __plugin_meta__ = PluginMetadata(
@@ -78,17 +77,6 @@ def wrapper(slot: Union[int, str], content: Optional[str], context) -> str:
 	if slot == 'type' and content:
 		return content
 	return ''  # pragma: no cover
-
-
-build_cache_cmd = on_command('build_cache', aliases={'重建缓存'}, block=True)
-
-
-@build_cache_cmd.handle()
-async def _build_cache(bot: Bot, event: Event):
-    return 
-	await saa.Text('正在重建缓存，请稍等。').send(reply=True) # type: ignore
-	await build_cache()
-	await saa.Text('重建缓存完成。').send(reply=True)
 
 
 b_cmd = on_alconna(
@@ -122,18 +110,16 @@ async def handle_b_cmd(
 	if not gid:
 		await b_cmd.finish('请指定群号。')
 
-	if keyword.available:
-		keywords = keyword.result
-	else:
-		keywords = None
+	_keyword = keyword.result
 
-	messages = await get_message_records(
+	d = await get_user_message_counts(
+		keyword=_keyword,
 		scene_ids=[gid],
 		user_ids=[id],
 		types=['message'],  # 排除机器人自己发的消息
 		exclude_user_ids=plugin_config.excluded_people,
 	)
-	d = msg_counter(messages, keywords)
+
 	rank = got_rank(d)
 	if not rank:
 		await b_cmd.finish(
@@ -302,24 +288,16 @@ async def handle_rank(
 
 	keyword = state['keyword']
 
-	if plugin_config.counting_cache:
-		await saa.Text("缓存暂不支持").finish()
-		# if keyword:
-		# 	await saa.Text('已开启缓存~缓存不支持关键词查询哦').finish()
-		# t1 = t.time()
-		# raw_rank = await get_cache(start, stop, id)
-		# logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
-	else:
-		t1 = t.time()
-		messages = await get_message_records(
-			scene_ids=[id],
-			types=['message'],  # 排除机器人自己发的消息
-			time_start=start,
-			time_stop=stop,
-			exclude_user_ids=plugin_config.excluded_people,
-		)
-		raw_rank = msg_counter(messages, keyword)
-		logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
+	t1 = t.time()
+	raw_rank = await get_user_message_counts(
+		keyword=keyword,
+		scene_ids=[id],
+		types=['message'],  # 排除机器人自己发的消息
+		time_start=start,
+		time_stop=stop,
+		exclude_user_ids=plugin_config.excluded_people,
+	)
+	logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
 
 	if not raw_rank:
 		await saa.Text(

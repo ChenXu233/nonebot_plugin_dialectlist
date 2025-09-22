@@ -2,9 +2,11 @@ import asyncio
 import os
 import re
 import unicodedata
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import httpx
+from sqlalchemy import select, func
+
 from nonebot.adapters import Bot, Event
 from nonebot.compat import model_dump
 from nonebot.log import logger
@@ -20,10 +22,11 @@ from nonebot_plugin_uninfo.model import SceneType
 from nonebot_plugin_uninfo.orm import SessionModel, UserModel
 from nonebot_plugin_uninfo import get_session as extract_session
 from nonebot_plugin_userinfo.exception import NetworkError
-from sqlalchemy import or_, select
+from nonebot_plugin_chatrecorder.record import filter_statement
+
 
 from .config import plugin_config
-from .model import UserRankInfo
+from .schema import UserRankInfo
 
 cache_path = get_cache_dir('nonebot_plugin_dialectlist')
 
@@ -38,71 +41,35 @@ async def ensure_group(
 
 async def persist_id2user_id(ids: List) -> List[str]:
 	user_ids = []
-	user_persist_ids = []
+	if not ids:
+		return user_ids
+
 	async with get_session() as db_session:
-		for i in ids:
-			session = await db_session.scalar(
-				select(SessionModel).where(or_(*[SessionModel.id == i]))
-			)
-			if session is not None:
-				user_persist_id = session.user_persist_id
-				user_persist_ids.append(user_persist_id)
-		for i in user_persist_ids:
-			user = await db_session.scalar(
-				select(UserModel).where(UserModel.id == i)
-			)
-			if user is not None:
-				user_ids.append(user.user_id)
+		statement = (
+			select(UserModel.user_id)
+			.join(SessionModel, UserModel.id == SessionModel.user_persist_id)
+			.where(SessionModel.id.in_(ids))
+		)
+		result = await db_session.scalars(statement)
+		user_ids = result.all()
 
-	return user_ids
+	return list(user_ids)
 
 
-def msg_counter(
-	msg_list: List[MessageRecord], keyword: Optional[str]
-) -> Dict[str, int]:
-	"""### 计算每个人的消息量
-
-	Args:
-	    msg_list (list[MessageRecord]): 需要处理的消息列表
-
-	Returns:
-	    (dict[str,int]): 处理后的消息数量字典,键为用户,值为消息数量
-	"""
-
-	lst: Dict[str, int] = {}
-	msg_len = len(msg_list)
-	logger.info('wow , there are {} msgs to count !!!'.format(msg_len))
-
-	for i in msg_list:
-		# logger.debug(f"processing msg {i.plain_text}")
-		if keyword:
-			match = re.search(keyword, i.plain_text)
-			if not match:
-				continue
-		try:
-			lst[str(i.session_persist_id)] += 1
-		except KeyError:
-			lst[str(i.session_persist_id)] = 1
-
-	logger.debug(f'finish counting, result is {lst}')
-
-	return lst
-
-
-def got_rank(msg_dict: Dict[str, int]) -> List:
+def got_rank(msg_dict: Dict[int, int]) -> List[List[Any]]:
 	"""### 获得排行榜
 
 	Args:
-	    msg_dict (Dict[str,int]): 要处理的字典
+	    msg_dict (Dict[int,int]): 要处理的字典
 
 	Returns:
-	    List[Tuple[str,int]]: 排行榜列表(已排序)
+	    List[Tuple[int,int]]: 排行榜列表(已排序)
 	"""
 	rank = []
 	while len(rank) < plugin_config.get_num:
 		try:
 			max_key = max(msg_dict.items(), key=lambda x: x[1])
-			rank.append(list(max_key))
+			rank.append(tuple(max_key))
 			msg_dict.pop(max_key[0])
 		except ValueError:
 			logger.error(
@@ -261,3 +228,42 @@ async def get_user_infos(
 		rank2.append(user)
 
 	return rank2
+
+
+async def get_user_message_counts(
+	keyword: Optional[str] = None, **kwargs
+) -> Dict[int, int]:
+	"""获取每个用户的消息数量（直接在数据库层面统计）
+
+	参数:
+	  * ``keyword``: 可选，关键词，只统计包含该关键词的消息
+	  * ``**kwargs``: 筛选参数，具体查看 `filter_statement` 中的定义
+
+	返回值:
+	  * ``Dict[str, int]``: 键为user_persist_id，值为该用户的消息数量
+	"""
+	whereclause = filter_statement(**kwargs)
+
+	# 如果提供了关键词，添加关键词过滤条件
+	if keyword:
+		# 构造LIKE条件，类似于msg_counter函数中的正则匹配
+		# 根据数据库类型不同，可能需要调整LIKE的语法
+		keyword_condition = MessageRecord.plain_text.ilike(f'%{keyword}%')
+		whereclause.append(keyword_condition)
+
+	# 使用SQL的GROUP BY和COUNT进行分组统计
+	statement = (
+		select(
+			SessionModel.user_persist_id,
+			func.count(MessageRecord.id).label('message_count'),
+		)
+		.select_from(MessageRecord)
+		.join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
+		.where(*whereclause)
+		.group_by(SessionModel.user_persist_id)
+	)
+
+	async with get_session() as db_session:
+		result = await db_session.execute(statement)
+		# 转换为字典格式返回
+		return {user_id: count for user_id, count in result.all()}
