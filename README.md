@@ -53,17 +53,22 @@ nb plugin install nonebot-plugin-dialectlist
 5. [nonebot-plugin-alconna](https://github.com/ArcletProject/nonebot-plugin-alconna) ————实现命令解析
 6. [nonebot-plugin-send-anything-anywhere](https://github.com/felinae98/nonebot-plugin-send-anything-anywhere) ————实现多平台发送
 7. [nonebot-plugin-htmlrender](https://github.com/nonebot/nonebot-plugin-htmlrender) ————渲染排行榜图片
-8. [nonebot-plugin-localstore](https://github.com/nonebot/nonebot-plugin-localstore) ————缓存目录
 
 **⚠ 注意** 若先前没有安装过`nonebot-plugin-chatrecorder`或者`nonebot-plugin-orm`，则会在启动时报错，请按报错的提示安装数据库！
 
 > [!IMPORTANT]
-> **关于 htmlrender 版本**：本插件要求 `nonebot-plugin-htmlrender >= 0.6.6, < 0.7`。
-> 上游从 0.7 起把渲染后端改成了必须显式配置（0.7 要 `RENDER_BACKEND`，0.8 要 `RENDER__PROVIDER`、
-> 默认禁止读取本地文件、且要求 nonebot2 >= 2.5）。模板里的 CSS、字体和头像都属于本地资源，
-> 在 0.7 / 0.8 下加载不到，出图会变成没有样式的纯文本。
-> 插件锁定在最后一个开箱即用的 0.6.x；跟进 0.8 需要把样式与头像内联成 data URI 并调整配置，
-> 属于单独一次大改，届时会另发版本。
+> **关于 htmlrender 版本**：支持 `nonebot-plugin-htmlrender >= 0.6.6, < 0.9`。
+> 0.6 开箱即用；用 0.7 / 0.8 时上游要求显式指定渲染后端，需要在 `.env` 里加一行：
+>
+> ```dotenv
+> # htmlrender 0.8+
+> RENDER__PROVIDER=playwright
+> # htmlrender 0.7
+> RENDER_BACKEND=playwright
+> ```
+>
+> 模板的样式、字体和头像已全部内联成 data URI，所以 0.8 的本地文件访问限制不影响出图。
+> 首次渲染会自动安装 Chromium，也可以手动执行 `playwright install chromium`。
 
 ## ⚙ 配置
 
@@ -86,6 +91,10 @@ dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条
 ```
 
 💭 也可以不进行配置，这将会使插件按照默认配置运行
+
+> [!NOTE]
+> 3.1.0 起模板变量有变化：`inline_css`（内联的样式表与字体）、`i.user_avatar_data_uri`（头像 data URI）。
+> 插件不再向缓存目录写头像文件，也不再向模板传入 `cache_path` / `file_path`；自定义模板请改用新变量。
 
 ### ⚠ 注意！！
 

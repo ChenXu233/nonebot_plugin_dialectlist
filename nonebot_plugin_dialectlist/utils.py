@@ -1,8 +1,11 @@
 import asyncio
+import base64
+import inspect
 import os
 from typing import Any, Dict, List, Optional
 
 import httpx
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy import func, select
 
 from nonebot.adapters import Bot, Event
@@ -10,7 +13,6 @@ from nonebot.compat import model_dump
 from nonebot.log import logger
 from nonebot_plugin_chatrecorder import MessageRecord
 from nonebot_plugin_chatrecorder.record import filter_statement
-from nonebot_plugin_localstore import get_cache_dir
 from nonebot_plugin_orm import get_session
 from nonebot_plugin_uninfo.orm import (
 	BotModel,
@@ -22,18 +24,98 @@ from nonebot_plugin_userinfo import UserInfo, get_user_info
 from nonebot_plugin_userinfo.exception import NetworkError
 
 
-try:
+try:  # htmlrender >= 0.8：render_template 需要模板目录在本地白名单内，
+	# 这里改用 render_html：模板由我们自己渲染成字符串，资源全部内联，
+	# 因此不需要用户额外配置任何本地路径。
+	from nonebot_plugin_htmlrender import render_html
+	from nonebot_plugin_htmlrender import render_template
+except ImportError:  # pragma: no cover - 0.6 / 0.7
+	render_html = None  # type: ignore[assignment]
+	render_template = None  # type: ignore[assignment]
+
+try:  # htmlrender < 0.8
 	from nonebot_plugin_htmlrender import template_to_pic
-except ImportError as e:  # pragma: no cover - htmlrender >= 0.8
-	raise ImportError(
-		'当前 nonebot-plugin-htmlrender 版本已移除 template_to_pic，'
-		'请安装 nonebot-plugin-htmlrender<0.7（见 README「关于 htmlrender 版本」）。'
-	) from e
+except ImportError:  # pragma: no cover - 0.8 起已被移除
+	template_to_pic = None  # type: ignore[assignment]
 
 from .config import plugin_config
 from .schema import UserRankInfo
 
-cache_path = get_cache_dir('nonebot_plugin_dialectlist')
+# 0.8 的 render_template 用 variables/width/height，0.7 的签名仍是 request/**kwargs
+_NEW_RENDER_API = (
+	render_template is not None
+	and 'variables' in inspect.signature(render_template).parameters
+)
+_VIEWPORT = {'viewport': {'width': 1000, 'height': 10}}
+_PLUGIN_TEMPLATE_DIR = os.path.dirname(os.path.abspath(__file__)) + '/template'
+_inline_css_cache: Dict[str, str] = {}
+
+
+def _build_inline_css(css_path: str) -> str:
+	"""读取样式表并把字体内联成 data URI，模板不再依赖本地文件"""
+	if css_path in _inline_css_cache:
+		return _inline_css_cache[css_path]
+
+	with open(css_path, encoding='utf-8') as f:
+		css = f.read()
+
+	font_path = os.path.join(
+		os.path.dirname(os.path.dirname(css_path)),
+		'res',
+		'HarmonyOS_Sans_SC.woff2',
+	)
+	if os.path.exists(font_path):
+		with open(font_path, 'rb') as f:
+			font = base64.b64encode(f.read()).decode('ascii')
+		css = css.replace(
+			'../res/HarmonyOS_Sans_SC.woff2', f'data:font/woff2;base64,{font}'
+		)
+
+	_inline_css_cache[css_path] = css
+	return css
+
+
+def _resolve_template_file() -> str:
+	template_path = plugin_config.template_path
+	if template_path[:2] == './':
+		return os.path.dirname(os.path.abspath(__file__)) + template_path[1:]
+	return template_path
+
+
+async def _render_template_to_pic(
+	template_dir: str, template_name: str, context: Dict[str, Any]
+) -> bytes:
+	"""渲染模板，兼容 htmlrender 0.6 / 0.7 与 0.8+ 两套接口"""
+	if _NEW_RENDER_API:
+		try:
+			environment = Environment(
+				loader=FileSystemLoader(template_dir),
+				autoescape=select_autoescape(['html', 'htm', 'xml', 'j2']),
+			)
+			html = environment.get_template(template_name).render(**context)
+			image = await render_html(  # type: ignore[misc]
+				html,
+				width=1000,
+				height=None,
+				device_pixel_ratio=2,
+			)
+		except Exception as exc:
+			if type(exc).__name__ == 'CapabilityUnavailable':
+				raise RuntimeError(
+					'htmlrender 0.8+ 必须显式指定渲染后端，请在 .env 中添加：\n'
+					'  RENDER__PROVIDER=playwright\n'
+					'首次渲染会自动安装 Chromium，也可以手动执行 '
+					'playwright install chromium。'
+				) from exc
+			raise
+		return image.data
+	if template_to_pic is not None:
+		return await template_to_pic(
+			template_dir, template_name, context, pages=_VIEWPORT
+		)
+	raise RuntimeError(
+		'没有找到可用的 htmlrender 渲染接口，请检查 nonebot-plugin-htmlrender 版本。'
+	)
 
 
 async def persist_id2user_id(ids: List[int]) -> Dict[int, str]:
@@ -83,42 +165,22 @@ def got_rank(msg_dict: Dict[int, int]) -> List[List[Any]]:
 
 
 async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
-	for i in rank:
-		if i.user_avatar:
-			try:
-				user_avatar = i.user_avatar_bytes
-			except NotImplementedError:
-				with open(
-					os.path.dirname(os.path.abspath(__file__))
-					+ '/template/avatar/default.jpg',
-					'rb',
-				) as f:
-					user_avatar = f.read()
-			with open(cache_path / (str(i.user_id) + '.jpg'), 'wb') as f:
-				f.write(user_avatar)
-
-	if plugin_config.template_path[:2] == './':
-		path = (
-			os.path.dirname(os.path.abspath(__file__))
-			+ plugin_config.template_path[1:]
-		)
-	else:
-		path = plugin_config.template_path
-
+	path = _resolve_template_file()
 	path_dir, filename = os.path.split(path)
-	logger.debug(
-		os.path.dirname(os.path.abspath(__file__))
-		+ plugin_config.template_path[1:]
-	)
-	return await template_to_pic(
+
+	# 自定义模板目录里没有样式表时，退回插件自带的样式
+	css_path = os.path.join(path_dir, 'css', 'style.css')
+	if not os.path.exists(css_path):
+		css_path = os.path.join(_PLUGIN_TEMPLATE_DIR, 'css', 'style.css')
+
+	logger.debug(f'渲染排行榜模板: {path}')
+	return await _render_template_to_pic(
 		path_dir,
 		filename,
 		{
 			'users': rank,
-			'cache_path': cache_path,
-			'file_path': os.path.dirname(os.path.abspath(__file__)),
+			'inline_css': _build_inline_css(css_path),
 		},
-		pages={'viewport': {'width': 1000, 'height': 10}},
 	)
 
 

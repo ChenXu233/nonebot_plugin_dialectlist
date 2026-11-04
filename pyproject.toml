@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-dialectlist"
-version = "3.0.2"
+version = "3.1.0"
 description = "看看你群群友有多能说"
 authors = [{ name = "Chen_Xu233", email = "woyerpa@outlook.com" }]
 dependencies = [
@@ -10,13 +10,14 @@ dependencies = [
     "nonebot-plugin-alconna>=0.50.2",
     "nonebot-plugin-uninfo>=0.8.0",
     "nonebot-plugin-userinfo>=0.2.6",
-    # 0.7 起渲染后端改为显式配置（RENDER_BACKEND / RENDER__PROVIDER），
-    # 0.8 还要求 nonebot2>=2.5 且默认禁止读取本地资源，出图会变空白。
-    # 这里锁在最后一个开箱即用的 0.6.x；详见 README「关于 htmlrender 版本」。
-    "nonebot-plugin-htmlrender>=0.6.6,<0.7",
-    "nonebot-plugin-localstore>=0.7.0",
+    # 0.6 开箱即用；0.8 需要 RENDER__PROVIDER=playwright（见 README）。
+    # 模板资源已全部内联，所以 0.8 的本地文件访问限制不影响出图。
+    "nonebot-plugin-htmlrender>=0.6.6,<0.9",
+    # htmlrender 0.8 起不再自带浏览器后端，这里显式保证有可用的后端
+    "playwright>=1.48.0",
     "nonebot-plugin-send-anything-anywhere>=0.7.1",
     "httpx>=0.27.0",
+    "jinja2>=3.0.3",
     "sqlalchemy>=2.0.0",
     "pillow>=11.3.0",
 ]
@@ -45,8 +46,8 @@ distribution = true
 line-length = 80
 
 [tool.ruff.format]
-quote-style = 'single'
-indent-style = 'tab'
+quote-style = "single"
+indent-style = "tab"
 
 [tool.ruff.lint]
 ignore = ["E402"]

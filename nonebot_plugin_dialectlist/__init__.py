@@ -1,6 +1,5 @@
 from nonebot import require
 
-require('nonebot_plugin_localstore')
 require('nonebot_plugin_chatrecorder')
 require('nonebot_plugin_htmlrender')
 require('nonebot_plugin_userinfo')

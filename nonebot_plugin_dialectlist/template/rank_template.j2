@@ -5,7 +5,7 @@
         <title>
             在 title 里夹一点私货应该不会被发现吧？——ddl 真是太厉害啦！
         </title>
-        <link rel="stylesheet" href="./css/style.css">
+        <style>{{ inline_css|safe }}</style>
     </head>
     <body>
         <div class="container">
@@ -21,7 +21,7 @@
                         <div class="rank_number rank_number_{{ i.user_index }}">{{ i.user_index }}</div>
                     </div>
                     <div class="avatar">
-                        <img class="profile" src="{{ cache_path }}/{{ i.user_id }}.jpg"/>
+                        <img class="profile" src="{{ i.user_avatar_data_uri }}"/>
                     </div>
                     <div class="rank_card_info">
                         <h1>{{ i.user_nickname }} {{ i.user_gender }}</h1>
