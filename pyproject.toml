@@ -1,11 +1,12 @@
 [project]
 name = "nonebot-plugin-dialectlist"
-version = "3.1.0"
+version = "3.2.0"
 description = "看看你群群友有多能说"
 authors = [{ name = "Chen_Xu233", email = "woyerpa@outlook.com" }]
 dependencies = [
     "nonebot2>=2.4.0",
     "nonebot-plugin-chatrecorder>=0.7.0",
+    "nonebot-plugin-apscheduler>=0.5.0",
     "nonebot-plugin-orm[sqlite]>=0.8.0",
     "nonebot-plugin-alconna>=0.50.2",
     "nonebot-plugin-uninfo>=0.8.0",

@@ -108,6 +108,10 @@ dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计�
 dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
 dialectlist__template_path: str = "./template/rank_template.j2"  # 模板路径
 dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
+dialectlist__push_enabled: bool = False  # 是否开启定时推送
+dialectlist__push_cron: str = "0 0 * * *"  # 默认推送时间（cron 5 段式）
+dialectlist__push_period: str = "昨日"  # 默认统计区间
+dialectlist__push_groups: Dict[str, dict] = {}  # 群号 -> 该群的推送配置
 ```
 
 💭 也可以不进行配置，这将会使插件按照默认配置运行
@@ -121,6 +125,36 @@ dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条
 > 在旧版插件（2.0.0 以下）中，dialectlist 与后面的配置项只隔了一个下划线，若更新到新版本以后需要俩个下划线。
 
 > 由于插件依赖 chatrecord 多次引入爆炸性修改，建议在遇到问题后优先尝试降级 chatrecord 插件
+
+## ⏰ 定时推送
+
+3.2.0 起支持按 cron 自动推送排行榜（默认关闭）。
+
+```dotenv
+DIALECTLIST__PUSH_ENABLED=true
+DIALECTLIST__PUSH_CRON=0 0 * * *
+DIALECTLIST__PUSH_PERIOD=昨日
+# 群号 -> 该群配置，不写字段就用全局默认
+DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "min_messages": 10}}
+```
+
+`push_groups` 里每一项支持这些字段（都会覆盖全局值）：
+
+| 字段 | 说明 | 默认 |
+| :-- | :-- | :-- |
+| `enabled` | 是否给这个群推送 | `true` |
+| `cron` | 该群的推送时间，5 段式 cron | 用 `push_cron` |
+| `period` | 统计区间，可选 今日/昨日/本周/上周/本月/上月/年度 | 用 `push_period` |
+| `min_messages` | 区间内消息数少于这个值就不推 | `0`（不限制） |
+| `min_members` | 群人数少于这个值就不推 | `0`（不限制） |
+| `get_num` | 该群榜单展示人数 | 用 `get_num` |
+
+几个注意点：
+
+- 目前只支持 QQ 群（群号必须是数字），其他平台会跳过并打日志
+- `min_members` 依赖适配器的 `get_group_info`，拿不到群信息时会跳过这项检查而不是不推
+- 推送用的是 uninfo 缓存的昵称和头像，不会在半夜刷接口
+- 时间按 `dialectlist__timezone` 解释
 
 ## 🗨 命令
 

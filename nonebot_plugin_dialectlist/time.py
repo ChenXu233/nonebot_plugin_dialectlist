@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Union
+from datetime import datetime, timedelta
+from typing import Optional, Tuple, Union
 from zoneinfo import ZoneInfo
 
 from nonebot.adapters import Message
@@ -30,6 +30,46 @@ def parse_datetime(key: str):
 			)
 
 	return _key_parser
+
+
+def resolve_period_range(
+	period: str, now: datetime
+) -> Optional[Tuple[datetime, datetime]]:
+	"""把 今日/昨日/本周/上周/本月/上月/年度 解析成一个时间区间
+
+	Args:
+	    period (str): 时间类型
+	    now (datetime): 当前时间（带时区）
+
+	Returns:
+	    Optional[Tuple[datetime, datetime]]: (start, stop)，不认识的类型返回 None
+	"""
+	midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+	if period == '今日':
+		return midnight, now
+	if period == '昨日':
+		return midnight - timedelta(days=1), midnight
+	if period == '本周':
+		return midnight - timedelta(days=now.weekday()), now
+	if period == '上周':
+		stop = midnight - timedelta(days=now.weekday())
+		return stop - timedelta(days=7), stop
+	if period == '本月':
+		return now.replace(
+			day=1, hour=0, minute=0, second=0, microsecond=0
+		), now
+	if period == '上月':
+		stop = now.replace(
+			day=1, hour=0, minute=0, second=0, microsecond=0
+		) - timedelta(microseconds=1)
+		return stop.replace(
+			day=1, hour=0, minute=0, second=0, microsecond=0
+		), stop
+	if period == '年度':
+		return now.replace(
+			month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+		), now
+	return None
 
 
 def get_datetime_now_with_timezone() -> datetime:

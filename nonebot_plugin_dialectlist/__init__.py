@@ -1,4 +1,4 @@
-from nonebot import require
+from nonebot import get_driver, require
 
 require('nonebot_plugin_chatrecorder')
 require('nonebot_plugin_htmlrender')
@@ -6,6 +6,7 @@ require('nonebot_plugin_userinfo')
 require('nonebot_plugin_alconna')
 require('nonebot_plugin_uninfo')
 require('nonebot_plugin_saa')
+require('nonebot_plugin_apscheduler')
 
 import re
 import time as t
@@ -32,13 +33,16 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
 from .config import Config, plugin_config
+from .push import register_push_jobs
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
 	get_datetime_now_with_timezone,
 	parse_datetime,
+	resolve_period_range,
 )
 from .usage import __usage__
 from .utils import (
+	format_rank_text,
 	get_rank_image,
 	get_user_infos,
 	got_rank,
@@ -196,40 +200,7 @@ async def _group_message(
 
 	dt = get_datetime_now_with_timezone()
 
-	if type == '今日':
-		state['start'] = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-		state['stop'] = dt
-	elif type == '昨日':
-		state['stop'] = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-		state['start'] = state['stop'] - timedelta(days=1)
-	elif type == '本周':
-		state['start'] = dt.replace(
-			hour=0, minute=0, second=0, microsecond=0
-		) - timedelta(days=dt.weekday())
-		state['stop'] = dt
-	elif type == '上周':
-		state['stop'] = dt.replace(
-			hour=0, minute=0, second=0, microsecond=0
-		) - timedelta(days=dt.weekday())
-		state['start'] = state['stop'] - timedelta(days=7)
-	elif type == '本月':
-		state['start'] = dt.replace(
-			day=1, hour=0, minute=0, second=0, microsecond=0
-		)
-		state['stop'] = dt
-	elif type == '上月':
-		state['stop'] = dt.replace(
-			day=1, hour=0, minute=0, second=0, microsecond=0
-		) - timedelta(microseconds=1)
-		state['start'] = state['stop'].replace(
-			day=1, hour=0, minute=0, second=0, microsecond=0
-		)
-	elif type == '年度':
-		state['start'] = dt.replace(
-			month=1, day=1, hour=0, minute=0, second=0, microsecond=0
-		)
-		state['stop'] = dt
-	elif type == '历史':
+	if type == '历史':
 		if time:
 			plaintext = time
 			if match := re.match(r'^(.+?)(?:~(.+))?$', plaintext):
@@ -253,6 +224,11 @@ async def _group_message(
 					await rank_cmd.finish(
 						'请输入正确的日期，不然我没法理解呢！'
 					)
+	else:
+		time_range = resolve_period_range(type, dt)
+		if time_range is None:
+			await rank_cmd.finish(f'不认识的时间类型：{type}')
+		state['start'], state['stop'] = time_range
 
 
 @rank_cmd.got(
@@ -317,23 +293,7 @@ async def handle_rank(
 	rank2 = await get_user_infos(bot, event, rank)
 	logger.debug(f'获取用户信息花费时间:{t.time() - t1}')
 
-	string: str = ''
-	if plugin_config.show_text_rank:
-		if keyword:
-			string += f'关于{keyword}的话痨榜结果：\n'
-		else:
-			string += '话痨榜：\n'
-
-		for i in rank2:
-			logger.debug(i.user_name)
-		for i in range(len(rank2)):
-			str_example = plugin_config.string_format.format(
-				index=rank2[i].user_index,
-				nickname=rank2[i].user_nickname,
-				chatdatanum=rank2[i].user_bnum,
-			)
-			string += str_example
-
+	string = format_rank_text(rank2, keyword)
 	msg = saa.Text(string)
 
 	if plugin_config.visualization:
@@ -353,3 +313,9 @@ async def handle_rank(
 		await saa.AggregatedMessageFactory([msg]).finish()
 	else:
 		await msg.finish(reply=True)
+
+
+@get_driver().on_startup
+async def _register_push_jobs() -> None:
+	"""启动时按配置注册定时推送任务"""
+	register_push_jobs()
