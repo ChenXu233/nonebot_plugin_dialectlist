@@ -16,6 +16,7 @@ class PushGroupConfig(BaseModel):
 
 
 class ScopedConfig(BaseModel):
+	enabled: bool = True  # 全局开关，群配置可以单独关掉
 	get_num: int = 5  # 获取人数数量
 	suffix: bool = True  # 是否显示后缀
 	visualization: bool = True  # 是否可视化

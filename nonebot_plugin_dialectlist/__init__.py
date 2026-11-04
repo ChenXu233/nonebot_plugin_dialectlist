@@ -7,18 +7,20 @@ require('nonebot_plugin_alconna')
 require('nonebot_plugin_uninfo')
 require('nonebot_plugin_saa')
 require('nonebot_plugin_apscheduler')
+require('nonebot_plugin_localstore')
 
 import re
 import time as t
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import nonebot_plugin_saa as saa
 from arclet.alconna import ArparmaBehavior
 from arclet.alconna.arparma import Arparma
-from nonebot.adapters import Bot, Event
+from nonebot import on_command
+from nonebot.adapters import Bot, Event, Message
 from nonebot.log import logger
-from nonebot.params import Arg, Depends
+from nonebot.params import Arg, CommandArg, Depends
 from nonebot.plugin import PluginMetadata, inherit_supported_adapters
 from nonebot.typing import T_State
 from nonebot_plugin_alconna import (
@@ -33,6 +35,7 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
 from .config import Config, plugin_config
+from .group_config import effective_config, resolve_push_config, store
 from .push import register_push_jobs
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
@@ -111,6 +114,10 @@ async def handle_b_cmd(
 	if not gid:
 		await b_cmd.finish('请指定群号。')
 
+	cfg = effective_config(str(gid))
+	if not cfg.enabled:
+		await b_cmd.finish('这个群的排行榜功能被关掉了，找管理员开一下。')
+
 	# 未使用 -k 时 Match.result 为 None，不能直接拼进文案
 	keyword_text = keyword.result if keyword.available else None
 	keyword_desc = f'关于“{keyword_text}”的' if keyword_text else ''
@@ -120,7 +127,7 @@ async def handle_b_cmd(
 		scene_ids=[gid],
 		user_ids=[id],
 		types=['message'],  # 只统计收到的消息，机器人自己发的不计入
-		exclude_user_ids=plugin_config.excluded_people,
+		exclude_user_ids=cfg.excluded_people,
 	)
 
 	rank = got_rank(d)
@@ -260,6 +267,10 @@ async def handle_rank(
 	if not id:
 		await saa.Text('没有指定群哦').finish()
 
+	cfg = effective_config(str(id))
+	if not cfg.enabled:
+		await saa.Text('这个群的排行榜功能被关掉了，找管理员开一下。').finish()
+
 	keyword = state['keyword']
 
 	t1 = t.time()
@@ -269,7 +280,7 @@ async def handle_rank(
 		types=['message'],  # 排除机器人自己发的消息
 		time_start=start,
 		time_stop=stop,
-		exclude_user_ids=plugin_config.excluded_people,
+		exclude_user_ids=cfg.excluded_people,
 	)
 	logger.debug(f'获取计数消息花费时间:{t.time() - t1}')
 
@@ -278,7 +289,7 @@ async def handle_rank(
 			'没有获取到排行榜数据哦，请确认时间范围和群号是否正确或者关键词是否存在~'
 		).finish()
 
-	rank = got_rank(raw_rank)
+	rank = got_rank(raw_rank, cfg.get_num)
 	# 必须按 user_persist_id 精确映射，不能依赖查询返回顺序
 	id_map = await persist_id2user_id([item[0] for item in rank])
 	for item in rank:
@@ -290,21 +301,21 @@ async def handle_rank(
 		logger.debug(item)
 
 	t1 = t.time()
-	rank2 = await get_user_infos(bot, event, rank)
+	rank2 = await get_user_infos(bot, event, rank, cfg.use_user_info_cache)
 	logger.debug(f'获取用户信息花费时间:{t.time() - t1}')
 
-	string = format_rank_text(rank2, keyword)
+	string = format_rank_text(rank2, keyword, cfg)
 	msg = saa.Text(string)
 
-	if plugin_config.visualization:
+	if cfg.visualization:
 		t1 = t.time()
-		image = await get_rank_image(rank2)
+		image = await get_rank_image(rank2, cfg.template_path)
 		msg += saa.Image(image)
 		logger.debug(f'群聊消息渲染图片花费时间:{t.time() - t1}')
 
-	if plugin_config.suffix:
+	if cfg.suffix:
 		timecost = t.time() - state['t1']
-		suffix = saa.Text(plugin_config.string_suffix.format(timecost=timecost))
+		suffix = saa.Text(cfg.string_suffix.format(timecost=timecost))
 		msg += suffix
 	if not msg:
 		await saa.Text('你把可视化都关了哪来的排行榜？').finish()
@@ -319,3 +330,242 @@ async def handle_rank(
 async def _register_push_jobs() -> None:
 	"""启动时按配置注册定时推送任务"""
 	register_push_jobs()
+
+
+# ---------------- 群配置 ----------------
+
+_CONFIG_KEYS: Dict[str, str] = {
+	'开关': 'enabled',
+	'启用': 'enabled',
+	'enabled': 'enabled',
+	'模板': 'template_path',
+	'template_path': 'template_path',
+	'人数': 'get_num',
+	'get_num': 'get_num',
+	'图片': 'visualization',
+	'visualization': 'visualization',
+	'文字': 'show_text_rank',
+	'show_text_rank': 'show_text_rank',
+	'后缀': 'suffix',
+	'suffix': 'suffix',
+	'排除': 'excluded_people',
+	'excluded_people': 'excluded_people',
+	'推送': 'push_enabled',
+	'push_enabled': 'push_enabled',
+	'推送时间': 'push_cron',
+	'push_cron': 'push_cron',
+	'推送区间': 'push_period',
+	'push_period': 'push_period',
+	'推送阈值': 'push_min_messages',
+	'push_min_messages': 'push_min_messages',
+	'推送群人数': 'push_min_members',
+	'push_min_members': 'push_min_members',
+	'推送人数': 'push_get_num',
+	'push_get_num': 'push_get_num',
+}
+
+_BOOL_TRUE = {'1', '开', '开启', 'on', 'true', 'yes', '是'}
+_BOOL_FALSE = {'0', '关', '关闭', 'off', 'false', 'no', '否', '禁用'}
+_BOOL_KEYS = {
+	'enabled',
+	'visualization',
+	'show_text_rank',
+	'suffix',
+	'push_enabled',
+}
+_INT_KEYS = {'get_num', 'push_min_messages', 'push_min_members', 'push_get_num'}
+
+_CONFIG_DESC: Dict[str, str] = {
+	'enabled': '这个群是否允许排行榜（查询和推送都会停）',
+	'template_path': '这个群用的模板文件路径',
+	'get_num': '榜单展示人数',
+	'visualization': '是否输出排行榜图片',
+	'show_text_rank': '是否输出文字榜单',
+	'suffix': '是否显示统计耗时',
+	'excluded_people': '统计时排除的 QQ 号，逗号分隔，清空 = 取消',
+	'push_enabled': '这个群是否定时推送',
+	'push_cron': '推送时间，5 段式 cron，如 0 8 * * *',
+	'push_period': '推送统计区间：今日/昨日/本周/上周/本月/上月/年度',
+	'push_min_messages': '推送的消息量下限',
+	'push_min_members': '推送的群人数下限',
+	'push_get_num': '推送榜单的人数',
+}
+
+
+def _config_help() -> str:
+	lines = [
+		'B话榜群配置',
+		'',
+		'用法：',
+		'  /B话榜配置              查看当前群的配置',
+		'  /B话榜配置 <键>         查看某一项',
+		'  /B话榜配置 <键> <值>    改某一项',
+		'  /B话榜配置 重置         恢复成全局默认',
+		'  /B话榜重载              重新读配置文件并刷新定时任务',
+		'',
+		'可用的键（中英文都行）：',
+	]
+	seen: set[str] = set()
+	for name, key in _CONFIG_KEYS.items():
+		if key in seen:
+			continue
+		seen.add(key)
+		names = [n for n, k in _CONFIG_KEYS.items() if k == key]
+		lines.append(f'  {" / ".join(names)}：{_CONFIG_DESC[key]}')
+	lines += [
+		'',
+		'例子：',
+		'  /B话榜配置 人数 3',
+		'  /B话榜配置 排除 123456,789012',
+		'  /B话榜配置 推送时间 0 8 * * *',
+		'  /B话榜配置 推送区间 本周',
+	]
+	return '\n'.join(lines)
+
+
+def _is_admin(event: Event, session: Session) -> bool:
+	"""超级用户，或者群管理/群主"""
+	if str(session.user.id) in {str(u) for u in get_driver().config.superusers}:
+		return True
+	sender = getattr(event, 'sender', None)
+	if getattr(sender, 'role', None) in ('admin', 'owner'):
+		return True
+	member = getattr(session, 'member', None)
+	for role in getattr(member, 'roles', None) or []:
+		if getattr(role, 'id', None) in ('admin', 'owner'):
+			return True
+	return False
+
+
+def _parse_config_value(key: str, raw: str) -> Any:
+	text = raw.strip()
+	if key in _BOOL_KEYS:
+		lowered = text.lower()
+		if lowered in _BOOL_TRUE:
+			return True
+		if lowered in _BOOL_FALSE:
+			return False
+		raise ValueError('请用 开 / 关')
+	if key in _INT_KEYS:
+		value = int(text)
+		if value < 0:
+			raise ValueError('不能是负数')
+		return value
+	if key == 'excluded_people':
+		if text in ('清空', '空', 'none', ''):
+			return []
+		return [p for p in re.split(r'[,，\s]+', text) if p]
+	if key == 'push_period':
+		if resolve_period_range(text, get_datetime_now_with_timezone()) is None:
+			raise ValueError('只能是 今日/昨日/本周/上周/本月/上月/年度')
+		return text
+	if key == 'push_cron':
+		if len(text.split()) != 5:
+			raise ValueError('cron 需要 5 段，比如 0 8 * * *')
+		return text
+	return text
+
+
+def _format_group_config(group_id: str) -> str:
+	group = store.get(group_id)
+	cfg = effective_config(group_id)
+	push_cfg = resolve_push_config(group_id)
+
+	def on_off(value: bool) -> str:
+		return '开' if value else '关'
+
+	rows = [
+		('开关', on_off(cfg.enabled), group.enabled),
+		('模板', cfg.template_path, group.template_path),
+		('人数', str(cfg.get_num), group.get_num),
+		('图片', on_off(cfg.visualization), group.visualization),
+		('文字', on_off(cfg.show_text_rank), group.show_text_rank),
+		('后缀', on_off(cfg.suffix), group.suffix),
+		('排除', ','.join(cfg.excluded_people) or '无', group.excluded_people),
+	]
+	if push_cfg is None:
+		rows.append(('推送', '关', group.push_enabled))
+	else:
+		period = push_cfg.period or plugin_config.push_period
+		cron = push_cfg.cron or plugin_config.push_cron
+		rows.append(('推送', f'开（{cron}，{period}）', group.push_enabled))
+
+	lines = [f'群 {group_id} 的配置：']
+	for name, value, override in rows:
+		lines.append(f'{"*" if override is not None else " "} {name}: {value}')
+	lines.append('')
+	lines.append('带 * 的是这个群单独改过的，其余跟随全局配置。')
+	lines.append(f'配置文件：{store.path}')
+	return '\n'.join(lines)
+
+
+config_cmd = on_command(
+	'B话榜配置', aliases={'话痨榜配置', 'b话榜配置'}, block=True, priority=5
+)
+
+
+@config_cmd.handle()
+async def handle_group_config(
+	event: Event,
+	args: Message = CommandArg(),
+	session: Session = Depends(get_session),
+):
+	if session.scene.is_private:
+		await config_cmd.finish('这个指令要在群里用哦。')
+	if not _is_admin(event, session):
+		await config_cmd.finish('只有群主、管理员和 bot 主人能改配置。')
+
+	group_id = str(session.scene.id)
+	text = args.extract_plain_text().strip()
+
+	if not text or text in ('查看', '列表', 'list'):
+		await config_cmd.finish(_format_group_config(group_id))
+	if text in ('帮助', 'help', '?', '-h', '用法'):
+		await config_cmd.finish(_config_help())
+	if text in ('重置', '清空', 'reset'):
+		store.reset(group_id)
+		register_push_jobs()
+		await config_cmd.finish(f'群 {group_id} 的配置已重置为全局默认。')
+
+	parts = text.split(maxsplit=1)
+	key = _CONFIG_KEYS.get(parts[0].lower()) or _CONFIG_KEYS.get(parts[0])
+	if key is None:
+		await config_cmd.finish(
+			'不认识的配置项，可用：'
+			+ '、'.join(dict.fromkeys(_CONFIG_KEYS.keys()))
+		)
+
+	if len(parts) == 1:
+		await config_cmd.finish(_format_group_config(group_id))
+
+	try:
+		value = _parse_config_value(key, parts[1])
+	except ValueError as e:
+		await config_cmd.finish(f'{parts[0]} 的值不对：{e}')
+
+	store.update(group_id, **{key: value})
+	if key == 'enabled' or key.startswith('push_'):
+		register_push_jobs()
+	await config_cmd.finish(
+		f'已把 {parts[0]} 设为 {value}，立即生效。\n\n'
+		+ _format_group_config(group_id)
+	)
+
+
+reload_cmd = on_command(
+	'B话榜重载', aliases={'话痨榜重载'}, block=True, priority=5
+)
+
+
+@reload_cmd.handle()
+async def handle_reload(
+	event: Event,
+	session: Session = Depends(get_session),
+):
+	if not _is_admin(event, session):
+		await reload_cmd.finish('只有群主、管理员和 bot 主人能用这个指令。')
+	store.reload()
+	register_push_jobs()
+	await reload_cmd.finish(
+		f'已重新读取 {len(store.all())} 个群的配置，定时任务已刷新。'
+	)

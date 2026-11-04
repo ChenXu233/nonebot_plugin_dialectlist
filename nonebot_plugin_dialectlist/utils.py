@@ -76,8 +76,8 @@ def _build_inline_css(css_path: str) -> str:
 	return css
 
 
-def _resolve_template_file() -> str:
-	template_path = plugin_config.template_path
+def _resolve_template_file(template_path: Optional[str] = None) -> str:
+	template_path = template_path or plugin_config.template_path
 	if template_path[:2] == './':
 		return os.path.dirname(os.path.abspath(__file__)) + template_path[1:]
 	return template_path
@@ -169,8 +169,10 @@ def got_rank(
 	return rank
 
 
-async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
-	path = _resolve_template_file()
+async def get_rank_image(
+	rank: List[UserRankInfo], template_path: Optional[str] = None
+) -> bytes:
+	path = _resolve_template_file(template_path)
 	path_dir, filename = os.path.split(path)
 
 	# 自定义模板目录里没有样式表时，退回插件自带的样式
@@ -364,14 +366,17 @@ async def get_user_infos_from_db(
 
 
 def format_rank_text(
-	rank: List[UserRankInfo], keyword: Optional[str] = None
+	rank: List[UserRankInfo],
+	keyword: Optional[str] = None,
+	cfg: Optional[Any] = None,
 ) -> str:
 	"""按 string_format 拼出文字榜单（命令和定时推送共用）"""
-	if not plugin_config.show_text_rank:
+	cfg = cfg or plugin_config
+	if not cfg.show_text_rank:
 		return ''
 	header = f'关于{keyword}的话痨榜结果：\n' if keyword else '话痨榜：\n'
 	return header + ''.join(
-		plugin_config.string_format.format(
+		cfg.string_format.format(
 			index=item.user_index,
 			nickname=item.user_nickname,
 			chatdatanum=item.user_bnum,

@@ -10,6 +10,7 @@ from nonebot.log import logger
 from nonebot_plugin_apscheduler import scheduler
 
 from .config import PushGroupConfig, plugin_config
+from .group_config import all_push_groups, effective_config
 from .time import get_datetime_now_with_timezone, resolve_period_range
 from .utils import (
 	format_rank_text,
@@ -57,6 +58,11 @@ async def _check_member_count(
 
 async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 	"""给一个群推送排行榜（定时任务入口）"""
+	group_cfg = effective_config(group_id)
+	if not group_cfg.enabled:
+		logger.info(f'[push] 群 {group_id} 已关闭排行榜，跳过')
+		return
+
 	period = cfg.period or plugin_config.push_period
 	now = get_datetime_now_with_timezone()
 	time_range = resolve_period_range(period, now)
@@ -84,7 +90,7 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 		types=['message'],
 		time_start=start,
 		time_stop=stop,
-		exclude_user_ids=plugin_config.excluded_people,
+		exclude_user_ids=group_cfg.excluded_people,
 	)
 	total = sum(counts.values())
 	if total <= 0:
@@ -96,7 +102,8 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 		)
 		return
 
-	rank = got_rank(dict(counts), cfg.get_num)
+	# 推送配置里的 get_num 优先，其次用该群自己的展示人数
+	rank = got_rank(dict(counts), cfg.get_num or group_cfg.get_num)
 	if not rank:
 		return
 	id_map = await persist_id2user_id([item[0] for item in rank])
@@ -104,10 +111,10 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 		item[0] = id_map.get(item[0], str(item[0]))
 
 	rank2 = await get_user_infos_from_db(group_id, rank)
-	text = format_rank_text(rank2)
+	text = format_rank_text(rank2, cfg=group_cfg)
 	msg = saa.Text(text) if text else None
-	if plugin_config.visualization:
-		image = await get_rank_image(rank2)
+	if group_cfg.visualization:
+		image = await get_rank_image(rank2, group_cfg.template_path)
 		msg = msg + saa.Image(image) if msg else saa.Image(image)
 	if msg is None:
 		logger.warning('[push] 文字和图片都被关掉了，没有内容可发')
@@ -129,13 +136,28 @@ def build_trigger(cron: str) -> CronTrigger:
 
 
 def register_push_jobs() -> None:
-	"""按配置给每个群注册一个定时任务"""
-	if not plugin_config.push_enabled:
-		return
-	if not plugin_config.push_groups:
-		logger.warning(
-			'[push] 已开启定时推送，但 dialectlist__push_groups 是空的，没有可推的群'
-		)
+	"""按配置同步每个群的定时任务（可重复调用）"""
+	# 全局关掉时 all_push_groups 返回空，这里正好顺带把旧任务清掉
+	resolved = all_push_groups()
+
+	# 先清掉已经不该存在的任务，保证热重载后不会留下孤儿任务
+	expected_ids = {f'dialectlist_push_{gid}' for gid in resolved}
+	for job in scheduler.get_jobs():
+		if (
+			job.id.startswith('dialectlist_push_')
+			and job.id not in expected_ids
+		):
+			scheduler.remove_job(job.id)
+			logger.info(f'[push] 已移除任务 {job.id}')
+
+	if not resolved:
+		if plugin_config.push_enabled:
+			logger.warning(
+				'[push] 已开启定时推送，但没有任何群需要推送'
+				'（dialectlist__push_groups 和群配置里的推送都是空的）'
+			)
+		else:
+			logger.debug('[push] 定时推送未开启')
 		return
 
 	# 任务挂在 nonebot-plugin-apscheduler 的调度器上，它没启动就不会触发
@@ -147,7 +169,7 @@ def register_push_jobs() -> None:
 			'需要自己调用 scheduler.start()'
 		)
 
-	for group_id, cfg in plugin_config.push_groups.items():
+	for group_id, cfg in resolved.items():
 		if not cfg.enabled:
 			continue
 		cron = cfg.cron or plugin_config.push_cron

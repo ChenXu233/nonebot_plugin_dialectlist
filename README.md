@@ -97,6 +97,7 @@ nb orm stamp --purge
 在 .env 中，可以添加以下配置项
 
 ```python
+dialectlist__enabled: bool = True  # 全局总开关
 dialectlist__get_num: int = 5  # 获取人数数量
 dialectlist__suffix: bool = True  # 是否显示后缀
 dialectlist__visualization: bool = True  # 是否可视化
@@ -155,6 +156,49 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 - `min_members` 依赖适配器的 `get_group_info`，拿不到群信息时会跳过这项检查而不是不推
 - 推送用的是 uninfo 缓存的昵称和头像，不会在半夜刷接口
 - 时间按 `dialectlist__timezone` 解释
+
+## 🛠 按群配置
+
+3.3.0 起每个群可以有自己的配置，存在 `groups.json` 里，改完立即生效，不用重启。
+
+路径由 localstore 决定（Windows 一般是 `%APPDATA%\nonebot2\nonebot_plugin_dialectlist\groups.json`），
+发一次 `/B话榜配置`，最后一行会打印实际路径。
+
+在群里用 `B话榜配置`（群主、管理员或 bot 主人才能用）：
+
+```text
+/B话榜配置 帮助          列出所有可配置项和例子
+/B话榜配置               查看当前群的配置，带 * 的是单独改过的
+/B话榜配置 开关 关        关掉这个群的排行榜（查询和推送都会停）
+/B话榜配置 人数 3         只显示前 3 名
+/B话榜配置 排除 123,456   统计时排除这些人
+/B话榜配置 模板 ./my.j2   换这个群的模板
+/B话榜配置 推送 开        给这个群开定时推送
+/B话榜配置 推送时间 0 8 * * *
+/B话榜配置 推送区间 本周
+/B话榜配置 重置           清空这个群的配置
+/B话榜重载                重新读配置文件并刷新定时任务
+```
+
+可用的键（中英文都行）：
+
+| 键 | 说明 |
+| :-- | :-- |
+| `开关` / `enabled` | 这个群是否允许查询和推送 |
+| `模板` / `template_path` | 该群使用的模板文件 |
+| `人数` / `get_num` | 榜单展示人数 |
+| `图片` / `visualization` | 是否输出排行榜图片 |
+| `文字` / `show_text_rank` | 是否输出文字榜单 |
+| `后缀` / `suffix` | 是否显示统计耗时 |
+| `排除` / `excluded_people` | 统计时排除的 QQ 号，逗号分隔，`清空` 表示取消 |
+| `推送` / `push_enabled` | 这个群是否定时推送 |
+| `推送时间` / `push_cron` | 推送用的 5 段式 cron |
+| `推送区间` / `push_period` | 推送统计区间 |
+| `推送阈值` / `push_min_messages` | 消息量下限 |
+| `推送群人数` / `push_min_members` | 群人数下限 |
+| `推送人数` / `push_get_num` | 推送榜单人数 |
+
+`.env` 里的 `dialectlist__push_groups` 仍然有效，两者叠加时以群配置为准；直接改 `groups.json` 也会在下一次读取时生效（按 mtime 判断），改完想立刻刷新定时任务就发一次 `/B话榜重载`。
 
 ## 🗨 命令
 
