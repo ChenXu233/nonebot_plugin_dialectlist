@@ -1,3 +1,4 @@
 include nonebot_plugin_dialectlist/template/*
 include nonebot_plugin_dialectlist/template/avatar/*
 include nonebot_plugin_dialectlist/template/css/*
+include nonebot_plugin_dialectlist/template/res/*

@@ -1,12 +1,12 @@
 from nonebot import require
 
+require('nonebot_plugin_localstore')
 require('nonebot_plugin_chatrecorder')
-require('nonebot_plugin_apscheduler')
 require('nonebot_plugin_htmlrender')
 require('nonebot_plugin_userinfo')
 require('nonebot_plugin_alconna')
 require('nonebot_plugin_uninfo')
-require('nonebot_plugin_cesaa')
+require('nonebot_plugin_saa')
 
 import re
 import time as t
@@ -33,8 +33,6 @@ from nonebot_plugin_alconna import (
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
 from .config import Config, plugin_config
-
-# from .storage import build_cache, get_cache
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
 	get_datetime_now_with_timezone,
@@ -110,24 +108,26 @@ async def handle_b_cmd(
 	if not gid:
 		await b_cmd.finish('请指定群号。')
 
-	_keyword = keyword.result
+	# 未使用 -k 时 Match.result 为 None，不能直接拼进文案
+	keyword_text = keyword.result if keyword.available else None
+	keyword_desc = f'关于“{keyword_text}”的' if keyword_text else ''
 
 	d = await get_user_message_counts(
-		keyword=_keyword,
+		keyword=keyword_text,
 		scene_ids=[gid],
 		user_ids=[id],
-		types=['message'],  # 排除机器人自己发的消息
+		types=['message'],  # 只统计收到的消息，机器人自己发的不计入
 		exclude_user_ids=plugin_config.excluded_people,
 	)
 
 	rank = got_rank(d)
 	if not rank:
 		await b_cmd.finish(
-			f'该用户在群“{uninfo.scene.name}”关于“{keyword.result}”的B话数量为0。'
+			f'该用户在群“{uninfo.scene.name}”{keyword_desc}B话数量为0。'
 		)
 
 	await saa.Text(
-		f'该用户在群“{uninfo.scene.name}”关于“{keyword.result}”的B话数量为{rank[0][1]}。'
+		f'该用户在群“{uninfo.scene.name}”{keyword_desc}B话数量为{rank[0][1]}。'
 	).send(reply=True)
 
 
@@ -183,7 +183,6 @@ async def _group_message(
 ):
 	t1 = t.time()
 	state['t1'] = t1
-	dt = get_datetime_now_with_timezone()
 
 	if not group_id:
 		group_id = session.scene.id
@@ -305,10 +304,15 @@ async def handle_rank(
 		).finish()
 
 	rank = got_rank(raw_rank)
-	ids = await persist_id2user_id([int(i[0]) for i in rank])
-	for i in range(len(rank)):
-		rank[i][0] = str(ids[i])
-		logger.debug(rank[i])
+	# 必须按 user_persist_id 精确映射，不能依赖查询返回顺序
+	id_map = await persist_id2user_id([item[0] for item in rank])
+	for item in rank:
+		user_id = id_map.get(item[0])
+		if user_id is None:
+			logger.warning(f'未找到持久化 id {item[0]} 对应的平台用户')
+			user_id = str(item[0])
+		item[0] = user_id
+		logger.debug(item)
 
 	t1 = t.time()
 	rank2 = await get_user_infos(bot, event, rank)

@@ -1,29 +1,34 @@
 import asyncio
 import os
-import re
-import unicodedata
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 import httpx
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from nonebot.adapters import Bot, Event
 from nonebot.compat import model_dump
 from nonebot.log import logger
-from nonebot.matcher import Matcher
-from nonebot.params import Depends
 from nonebot_plugin_chatrecorder import MessageRecord
-from nonebot_plugin_htmlrender import template_to_pic
+from nonebot_plugin_chatrecorder.record import filter_statement
 from nonebot_plugin_localstore import get_cache_dir
 from nonebot_plugin_orm import get_session
+from nonebot_plugin_uninfo.orm import (
+	BotModel,
+	SceneModel,
+	SessionModel,
+	UserModel,
+)
 from nonebot_plugin_userinfo import UserInfo, get_user_info
-from nonebot_plugin_uninfo import Session
-from nonebot_plugin_uninfo.model import SceneType
-from nonebot_plugin_uninfo.orm import SessionModel, UserModel
-from nonebot_plugin_uninfo import get_session as extract_session
 from nonebot_plugin_userinfo.exception import NetworkError
-from nonebot_plugin_chatrecorder.record import filter_statement
 
+
+try:
+	from nonebot_plugin_htmlrender import template_to_pic
+except ImportError as e:  # pragma: no cover - htmlrender >= 0.8
+	raise ImportError(
+		'当前 nonebot-plugin-htmlrender 版本已移除 template_to_pic，'
+		'请安装 nonebot-plugin-htmlrender<0.7（见 README「关于 htmlrender 版本」）。'
+	) from e
 
 from .config import plugin_config
 from .schema import UserRankInfo
@@ -31,29 +36,24 @@ from .schema import UserRankInfo
 cache_path = get_cache_dir('nonebot_plugin_dialectlist')
 
 
-async def ensure_group(
-	matcher: Matcher, session: Session = Depends(extract_session)
-):
-	"""确保在群组中使用"""
-	if session.scene.type not in [SceneType.GROUP, SceneType.GUILD]:
-		await matcher.finish('请在群组中使用！')
+async def persist_id2user_id(ids: List[int]) -> Dict[int, str]:
+	"""将用户持久化 id 映射为平台用户 id
 
+	Args:
+	    ids (List[int]): 用户持久化 id 列表
 
-async def persist_id2user_id(ids: List) -> List[str]:
-	user_ids = []
+	Returns:
+	    Dict[int, str]: 持久化 id 到平台用户 id 的映射
+	"""
 	if not ids:
-		return user_ids
+		return {}
 
 	async with get_session() as db_session:
-		statement = (
-			select(UserModel.user_id)
-			.join(SessionModel, UserModel.id == SessionModel.user_persist_id)
-			.where(SessionModel.id.in_(ids))
+		statement = select(UserModel.id, UserModel.user_id).where(
+			UserModel.id.in_(ids)
 		)
-		result = await db_session.scalars(statement)
-		user_ids = result.all()
-
-	return list(user_ids)
+		result = await db_session.execute(statement)
+		return dict(result.all())
 
 
 def got_rank(msg_dict: Dict[int, int]) -> List[List[Any]]:
@@ -82,30 +82,18 @@ def got_rank(msg_dict: Dict[int, int]) -> List[List[Any]]:
 	return rank
 
 
-def remove_control_characters(string: str) -> str:
-	"""### 将字符串中的控制符去除
-
-	Args:
-	    string (str): 需要去除的字符串
-
-	Returns:
-	    (str): 经过处理的字符串
-	"""
-	return ''.join(ch for ch in string if unicodedata.category(ch)[0] != 'C')
-
-
 async def get_rank_image(rank: List[UserRankInfo]) -> bytes:
 	for i in rank:
 		if i.user_avatar:
 			try:
 				user_avatar = i.user_avatar_bytes
 			except NotImplementedError:
-				user_avatar = open(
+				with open(
 					os.path.dirname(os.path.abspath(__file__))
 					+ '/template/avatar/default.jpg',
 					'rb',
-				).read()
-			# if not os.path.exists(cache_path / str(i.user_id)):
+				) as f:
+					user_avatar = f.read()
 			with open(cache_path / (str(i.user_id) + '.jpg'), 'wb') as f:
 				f.write(user_avatar)
 
@@ -146,12 +134,12 @@ def _get_user_nickname(user_info: UserInfo) -> str:
 
 
 async def _get_user_default_avatar() -> bytes:
-	img = open(
+	with open(
 		os.path.dirname(os.path.abspath(__file__))
 		+ '/template/avatar/default.jpg',
 		'rb',
-	).read()
-	return img
+	) as f:
+		return f.read()
 
 
 async def _get_user_avatar(user: UserInfo, client: httpx.AsyncClient) -> bytes:
@@ -188,20 +176,21 @@ async def get_user_infos(
 	user_infos = await asyncio.gather(*pool)
 
 	async with httpx.AsyncClient() as client:
-		pool = []
-		for i in user_infos:
-			if not i:
-				pool.append(_get_user_default_avatar())
-				continue
-			if i.user_avatar:
-				pool.append(_get_user_avatar(i, client))
-		user_avatars = await asyncio.gather(*pool)
+		pool = [
+			_get_user_avatar(info, client)
+			if info and info.user_avatar
+			else _get_user_default_avatar()
+			for info in user_infos
+		]
+		results = await asyncio.gather(*pool, return_exceptions=True)
 
-	for i in user_avatars:
-		if not i:
-			user_avatars[
-				user_avatars.index(i)
-			] = await _get_user_default_avatar()
+	user_avatars = []
+	for result in results:
+		if isinstance(result, BaseException):
+			logger.warning(f'获取用户头像失败，已使用默认头像: {result}')
+			user_avatars.append(await _get_user_default_avatar())
+		else:
+			user_avatars.append(result)
 
 	total = sum([i[1] for i in rank])
 	rank2 = []
@@ -218,7 +207,6 @@ async def get_user_infos(
 			user_nickname=_get_user_nickname(user_info),
 			user_avatar_bytes=user_avatars[i],
 		)
-		print(user.user_gender)
 		if user.user_gender == 'male':
 			user.user_gender = '♂'
 		elif user.user_gender == 'female':
@@ -246,12 +234,13 @@ async def get_user_message_counts(
 
 	# 如果提供了关键词，添加关键词过滤条件
 	if keyword:
-		# 构造LIKE条件，类似于msg_counter函数中的正则匹配
-		# 根据数据库类型不同，可能需要调整LIKE的语法
-		keyword_condition = MessageRecord.plain_text.ilike(f'%{keyword}%')
-		whereclause.append(keyword_condition)
+		# 按“包含”匹配，autoescape 会把 % / _ 转义成普通字符
+		whereclause.append(
+			MessageRecord.plain_text.icontains(keyword, autoescape=True)
+		)
 
-	# 使用SQL的GROUP BY和COUNT进行分组统计
+	# filter_statement 的条件会引用 Bot/Scene/User 表，必须一并 join，
+	# 否则 SQLAlchemy 会退化成隐式笛卡尔积，统计结果会被成倍放大
 	statement = (
 		select(
 			SessionModel.user_persist_id,
@@ -259,6 +248,9 @@ async def get_user_message_counts(
 		)
 		.select_from(MessageRecord)
 		.join(SessionModel, SessionModel.id == MessageRecord.session_persist_id)
+		.join(UserModel, UserModel.id == SessionModel.user_persist_id)
+		.join(SceneModel, SceneModel.id == SessionModel.scene_persist_id)
+		.join(BotModel, BotModel.id == SessionModel.bot_persist_id)
 		.where(*whereclause)
 		.group_by(SessionModel.user_persist_id)
 	)

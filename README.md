@@ -15,7 +15,7 @@ nonebot-plugin-dialectlist
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-dialectlist.svg" alt="pypi">
   </a>
 
-  <img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="python">
+  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
   
   <a href="https://qm.qq.com/q/Yty2yc9Bee">
     <img src="https://img.shields.io/badge/QQ%E7%BE%A4-1128359833-orange?style=flat-square" alt="QQ Chat Group">
@@ -46,14 +46,24 @@ nb plugin install nonebot-plugin-dialectlist
 
 ### ✅ 插件依赖于
 
-1. [nonebot-plugin-datastore](https://github.com/he0119/nonebot-plugin-datastore) ————本地化储存
-2. [nonebot-plugin-userinfo](https://github.com/noneplugin/nonebot-plugin-userinfo) ————获取用户信息
-3. [nonebot-plugin-apscheduler](https://github.com/nonebot/plugin-apscheduler) ————定时发送排行榜信息
-4. [nonebot-plugin-alconna](https://github.com/ArcletProject/nonebot-plugin-alconna) ————实现命令解析
-5. [nonebot-plugin-chatrecorder](https://github.com/noneplugin/nonebot-plugin-chatrecorder) ————实现消息储存
-6. [nonebot-plugin-cesaa](https://github.com/MountainDash/nonebot-plugin-send-anything-anywhere) ————实现多平台
+1. [nonebot-plugin-chatrecorder](https://github.com/noneplugin/nonebot-plugin-chatrecorder) ————实现消息储存
+2. [nonebot-plugin-orm](https://github.com/nonebot/nonebot-plugin-orm) ————数据库
+3. [nonebot-plugin-uninfo](https://github.com/nonebot/nonebot-plugin-uninfo) ————跨平台会话信息
+4. [nonebot-plugin-userinfo](https://github.com/noneplugin/nonebot-plugin-userinfo) ————获取用户信息
+5. [nonebot-plugin-alconna](https://github.com/ArcletProject/nonebot-plugin-alconna) ————实现命令解析
+6. [nonebot-plugin-send-anything-anywhere](https://github.com/felinae98/nonebot-plugin-send-anything-anywhere) ————实现多平台发送
+7. [nonebot-plugin-htmlrender](https://github.com/nonebot/nonebot-plugin-htmlrender) ————渲染排行榜图片
+8. [nonebot-plugin-localstore](https://github.com/nonebot/nonebot-plugin-localstore) ————缓存目录
 
 **⚠ 注意** 若先前没有安装过`nonebot-plugin-chatrecorder`或者`nonebot-plugin-orm`，则会在启动时报错，请按报错的提示安装数据库！
+
+> [!IMPORTANT]
+> **关于 htmlrender 版本**：本插件要求 `nonebot-plugin-htmlrender >= 0.6.6, < 0.7`。
+> 上游从 0.7 起把渲染后端改成了必须显式配置（0.7 要 `RENDER_BACKEND`，0.8 要 `RENDER__PROVIDER`、
+> 默认禁止读取本地文件、且要求 nonebot2 >= 2.5）。模板里的 CSS、字体和头像都属于本地资源，
+> 在 0.7 / 0.8 下加载不到，出图会变成没有样式的纯文本。
+> 插件锁定在最后一个开箱即用的 0.6.x；跟进 0.8 需要把样式与头像内联成 data URI 并调整配置，
+> 属于单独一次大改，届时会另发版本。
 
 ## ⚙ 配置
 
@@ -63,9 +73,7 @@ nb plugin install nonebot-plugin-dialectlist
 
 ```python
 dialectlist__get_num: int = 5  # 获取人数数量
-dialectlist__font: str = "SimHei"  # 字体格式
 dialectlist__suffix: bool = True  # 是否显示后缀
-dialectlist__excluded_self: bool = True  # 是否排除自己
 dialectlist__visualization: bool = True  # 是否可视化
 dialectlist__show_text_rank: bool = True  # 是否显示文本排名
 dialectlist__excluded_people: List[str] = []  # 排除的人的 QQ 号
@@ -74,7 +82,7 @@ dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
 dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
 dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
 dialectlist__template_path: str = "./template/rank_template.j2"  # 模板路径
-dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息、n"  # 消息格式
+dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
 ```
 
 💭 也可以不进行配置，这将会使插件按照默认配置运行
@@ -100,8 +108,6 @@ dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条
 -`/今日 B 话榜` ————看看今天的群友发了多少消息！
 
 -`/昨日 B 话榜` ————看看昨天的群友发了多少消息！
-
--`/前日 B 话榜` ————看看前天的群友发了多少消息！
 
 -`/本周 B 话榜` ————看看本周的群友发了多少消息！
 
@@ -143,7 +149,10 @@ dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条
 `/kkb @man -k ♂`
 
 > [!IMPORTANT]
-> 关键词支持正则表达式！
+> 关键词按“包含”匹配（不区分大小写的子串匹配），**不支持正则表达式**；输入中的 `%`、`_` 会按普通字符处理。
+
+> [!NOTE]
+> 3.0.2 起移除了从未生效的 `font`（字体固定使用内置字体）与 `excluded_self`（统计本就只算收到的消息）两项配置。
 
 ## 💪 目前支持的平台
 

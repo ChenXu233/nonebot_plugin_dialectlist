@@ -6,9 +6,7 @@ from pydantic import BaseModel
 
 class ScopedConfig(BaseModel):
 	get_num: int = 5  # 获取人数数量
-	font: str = 'SimHei'  # 字体格式
 	suffix: bool = True  # 是否显示后缀
-	excluded_self: bool = True  # 是否排除自己
 	visualization: bool = True  # 是否可视化
 	show_text_rank: bool = True  # 是否显示文本排名
 	excluded_people: List[str] = []  # 排除的人的QQ号
