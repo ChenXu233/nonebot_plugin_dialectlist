@@ -70,6 +70,26 @@ nb plugin install nonebot-plugin-dialectlist
 > 模板的样式、字体和头像已全部内联成 data URI，所以 0.8 的本地文件访问限制不影响出图。
 > 首次渲染会自动安装 Chromium，也可以手动执行 `playwright install chromium`。
 
+## 🔄 从 2.x 升级
+
+3.0 起插件不再使用数据库缓存，2.x 的迁移文件也一并移除了。如果升级后启动时报：
+
+```
+alembic.util.exc.CommandError: Can't locate revision identified by 'fb88e4d27eb8'
+```
+
+说明数据库的 `alembic_version` 表里还留着旧插件的版本号，执行一次即可：
+
+```bash
+nb orm stamp --purge
+```
+
+它会把版本表清空并标记到当前的迁移 head（**不执行任何迁移**），之后就能正常启动。
+
+> [!NOTE]
+> 2.6.x 的迁移文件本身有一条指向不存在的父迁移，会报 `KeyError: '60daff81fcdc'`，
+> 升级到 3.1 后该文件已删除，不会再出现这个错误。
+
 ## ⚙ 配置
 
 需要**提前配置**本插件所**依赖的插件**！
