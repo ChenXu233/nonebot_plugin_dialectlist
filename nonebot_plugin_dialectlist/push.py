@@ -13,6 +13,7 @@ from .config import PushGroupConfig, plugin_config
 from .group_config import all_push_groups, effective_config
 from .time import get_datetime_now_with_timezone, resolve_period_range
 from .utils import (
+	RenderError,
 	format_rank_text,
 	get_rank_image,
 	get_user_infos_from_db,
@@ -114,8 +115,14 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 	text = format_rank_text(rank2, cfg=group_cfg)
 	msg = saa.Text(text) if text else None
 	if group_cfg.visualization:
-		image = await get_rank_image(rank2, group_cfg.template_path)
-		msg = msg + saa.Image(image) if msg else saa.Image(image)
+		try:
+			image = await get_rank_image(rank2, group_cfg.template_path)
+		except RenderError as e:
+			logger.exception(f'[push] 群 {group_id} 渲染图片失败，改为只发文字')
+			note = saa.Text(f'\n（图片渲染失败：{e}，管理员可以看日志）')
+			msg = msg + note if msg else note
+		else:
+			msg = msg + saa.Image(image) if msg else saa.Image(image)
 	if msg is None:
 		logger.warning('[push] 文字和图片都被关掉了，没有内容可发')
 		return

@@ -1,5 +1,10 @@
 from nonebot import get_driver, require
 
+from .render_env import TROUBLESHOOTING, ensure_render_backend
+
+# 必须在 htmlrender 被 require 之前：0.8+ 没有默认渲染后端，这里补默认值
+ensure_render_backend()
+
 require('nonebot_plugin_chatrecorder')
 require('nonebot_plugin_htmlrender')
 require('nonebot_plugin_userinfo')
@@ -45,6 +50,7 @@ from .time import (
 )
 from .usage import __usage__
 from .utils import (
+	RenderError,
 	format_rank_text,
 	get_rank_image,
 	get_user_infos,
@@ -309,9 +315,16 @@ async def handle_rank(
 
 	if cfg.visualization:
 		t1 = t.time()
-		image = await get_rank_image(rank2, cfg.template_path)
-		msg += saa.Image(image)
-		logger.debug(f'群聊消息渲染图片花费时间:{t.time() - t1}')
+		try:
+			image = await get_rank_image(rank2, cfg.template_path)
+		except RenderError as e:
+			logger.error(TROUBLESHOOTING)
+			msg += saa.Text(
+				f'\n（图片渲染失败：{e}，管理员可以在日志里看到排查步骤）'
+			)
+		else:
+			msg += saa.Image(image)
+			logger.debug(f'群聊消息渲染图片花费时间:{t.time() - t1}')
 
 	if cfg.suffix:
 		timecost = t.time() - state['t1']

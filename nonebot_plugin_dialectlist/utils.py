@@ -83,6 +83,25 @@ def _resolve_template_file(template_path: Optional[str] = None) -> str:
 	return template_path
 
 
+class RenderError(RuntimeError):
+	"""渲染环境不可用（缺后端配置、浏览器没装好、超时等）"""
+
+
+def _describe_render_error(exc: Exception) -> str:
+	"""把渲染异常翻译成一句人话"""
+	name = type(exc).__name__
+	text = str(exc)
+	if name == 'CapabilityUnavailable':
+		return 'htmlrender 没有可用的渲染后端（0.8+ 要配 RENDER__PROVIDER）'
+	if 'Executable doesn' in text or 'executable doesn' in text:
+		return 'Playwright 浏览器没装好'
+	if 'Timeout' in name or 'timeout' in text.lower():
+		return '渲染超时'
+	if 'download' in text.lower() and 'fail' in text.lower():
+		return '下载浏览器或资源失败'
+	return f'{name}: {text}'[:160]
+
+
 async def _render_template_to_pic(
 	template_dir: str, template_name: str, context: Dict[str, Any]
 ) -> bytes:
@@ -101,19 +120,17 @@ async def _render_template_to_pic(
 				device_pixel_ratio=2,
 			)
 		except Exception as exc:
-			if type(exc).__name__ == 'CapabilityUnavailable':
-				raise RuntimeError(
-					'htmlrender 0.8+ 必须显式指定渲染后端，请在 .env 中添加：\n'
-					'  RENDER__PROVIDER=playwright\n'
-					'首次渲染会自动安装 Chromium，也可以手动执行 '
-					'playwright install chromium。'
-				) from exc
-			raise
+			logger.exception(f'渲染排行榜图片失败: {exc}')
+			raise RenderError(_describe_render_error(exc)) from exc
 		return image.data
 	if template_to_pic is not None:
-		return await template_to_pic(
-			template_dir, template_name, context, pages=_VIEWPORT
-		)
+		try:
+			return await template_to_pic(
+				template_dir, template_name, context, pages=_VIEWPORT
+			)
+		except Exception as exc:
+			logger.exception(f'渲染排行榜图片失败: {exc}')
+			raise RenderError(_describe_render_error(exc)) from exc
 	raise RuntimeError(
 		'没有找到可用的 htmlrender 渲染接口，请检查 nonebot-plugin-htmlrender 版本。'
 	)

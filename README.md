@@ -58,7 +58,10 @@ nb plugin install nonebot-plugin-dialectlist
 
 > [!IMPORTANT]
 > **关于 htmlrender 版本**：支持 `nonebot-plugin-htmlrender >= 0.6.6, < 0.9`。
-> 0.6 开箱即用；用 0.7 / 0.8 时上游要求显式指定渲染后端，需要在 `.env` 里加一行：
+>
+> 3.4.0 起插件会在启动时检查渲染后端：检测到 0.8+ 但没配 `RENDER__PROVIDER`，
+> 会自动按 `playwright` 处理（0.7 对应 `RENDER_BACKEND`），并在日志里提示一次。
+> 想换后端就在 `.env` 里显式写上，插件不会覆盖你的配置：
 >
 > ```dotenv
 > # htmlrender 0.8+
@@ -69,6 +72,9 @@ nb plugin install nonebot-plugin-dialectlist
 >
 > 模板的样式、字体和头像已全部内联成 data URI，所以 0.8 的本地文件访问限制不影响出图。
 > 首次渲染会自动安装 Chromium，也可以手动执行 `playwright install chromium`。
+>
+> 如果渲染真的失败了（比如浏览器没装好），群里会收到一句「图片渲染失败：…」的提示，
+> 而不是毫无反应；完整排查步骤写在日志里。
 
 ## 🔄 从 2.x 升级
 
