@@ -115,7 +115,10 @@ dialectlist__use_user_info_cache: bool = False  # 是否使用用户信息缓存
 dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
 dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
 dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
-dialectlist__template_path: str = "./template/rank_template.j2"  # 模板路径
+dialectlist__template: str = "classic"  # 榜单模板（classic / podium / 自建的）
+dialectlist__template_path: str = ""  # 老写法：直接指一个 .j2，填了就优先用它
+dialectlist__theme: str = "dark"  # 配色：dark / light / minimal / warm
+dialectlist__layout: str = "list"  # 排版：list（竖排）/ grid（横排）
 dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
 dialectlist__push_enabled: bool = False  # 是否开启定时推送
 dialectlist__push_cron: str = "0 0 * * *"  # 默认推送时间（cron 5 段式）
@@ -180,7 +183,9 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 /B话榜配置 开关 关        关掉这个群的排行榜（查询和推送都会停）
 /B话榜配置 人数 3         只显示前 3 名
 /B话榜配置 排除 123,456   统计时排除这些人
-/B话榜配置 模板 ./my.j2   换这个群的模板
+/B话榜配置 模板 podium    换这个群的模板
+/B话榜配置 样式 浅色       换配色
+/B话榜配置 布局 横排       换排版
 /B话榜配置 推送 开        给这个群开定时推送
 /B话榜配置 推送时间 0 8 * * *
 /B话榜配置 推送区间 本周
@@ -193,7 +198,10 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 | 键 | 说明 |
 | :-- | :-- |
 | `开关` / `enabled` | 这个群是否允许查询和推送 |
-| `模板` / `template_path` | 该群使用的模板文件 |
+| `模板` / `template` | 该群用哪套模板，见 [样式与模板](#-样式与模板) |
+| `模板路径` / `template_path` | 直接指定模板文件的老写法 |
+| `样式` / `theme` | 配色：暗夜 / 浅色 / 简约 / 暖阳 |
+| `布局` / `layout` | 排版：竖排 / 横排 |
 | `人数` / `get_num` | 榜单展示人数 |
 | `图片` / `visualization` | 是否输出排行榜图片 |
 | `文字` / `show_text_rank` | 是否输出文字榜单 |
@@ -207,6 +215,104 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 | `推送人数` / `push_get_num` | 推送榜单人数 |
 
 `.env` 里的 `dialectlist__push_groups` 仍然有效，两者叠加时以群配置为准；直接改 `groups.json` 也会在下一次读取时生效（按 mtime 判断），改完想立刻刷新定时任务就发一次 `/B话榜重载`。
+
+## 🎨 样式与模板
+
+3.5.0 起，外观拆成三层：**模板**（结构）+ **配色** + **排版**。换配色不用碰模板，换模板也不用改代码。
+
+### 配色和排版
+
+| 配色 | id | 长什么样 |
+| :-- | :-- | :-- |
+| 暗夜 | `dark` | 霓虹描边 + 深色底，默认 |
+| 浅色 | `light` | 白底卡片，白天看不刺眼 |
+| 简约 | `minimal` | 纯黑白，去掉发光和圆角 |
+| 暖阳 | `warm` | 米色底 + 橙粉渐变 |
+
+排版两种：`list`（一人一行，默认）和 `grid`（卡片横着铺开）。
+
+```dotenv
+DIALECTLIST__THEME=light
+DIALECTLIST__LAYOUT=grid
+```
+
+群里也能改，改之前可以先看一眼效果：
+
+```text
+/B话榜样式                 列出所有配色和排版，附当前群用的
+/B话榜样式 浅色             渲一张预览图
+/B话榜样式 浅色 横排        配色和排版一起看
+/B话榜配置 样式 浅色        这个群以后用浅色
+/B话榜配置 布局 横排
+```
+
+### 模板包
+
+模板是一个**目录**，不是单个 `.j2`。自己做的模板丢进插件配置目录就能用：
+
+```text
+<插件配置目录>/templates/
+└── myskin/
+    ├── rank_template.j2   # 必须
+    ├── meta.json          # 可选：名字、说明、作者
+    └── extra.css          # 可选：模板自己的样式，配色照样跟着主题走
+```
+
+```json
+{
+  "name": "我的皮肤",
+  "description": "长条卡片 + 大数字",
+  "author": "某人"
+}
+```
+
+拷进去就生效，不用重启：
+
+```text
+/B话榜模板                列出所有模板（内置的 + 你自己的）
+/B话榜模板 podium         渲一张预览图
+/B话榜配置 模板 podium     这个群以后用它
+/今日B话榜 -m podium      就这一次用它
+```
+
+内置两套：`classic`（一人一行）和 `podium`（前三名上台，其余收成紧凑列表）。
+
+想整套自己写样式，就在模板目录里放 `css/style.css`——放了它就不再套主题，整份样式由你决定。
+字体和图片照样会被内联成 data URI，不用管 htmlrender 的本地文件访问限制。
+
+`template_path` 老写法（直接指一个 `.j2` 文件）仍然兼容，指向的文件不存在会自动退回按模板名选。
+
+## 📊 更多查询
+
+除了「某个群某个时间段的榜单」，还能这么查（都是 3.5.0 加的）：
+
+### 分布图
+
+```text
+/B话榜分布                今天，按小时
+/B话榜分布 本月 星期      这个月，按星期几
+/B话榜分布 本周 -g 123456 指定群
+/B话榜分布 今日 -k 女装   只看带关键词的消息
+```
+
+### 多群对比
+
+```text
+/B话榜对比 123456 789012           今日，两个群放一张图里
+/B话榜对比 123456 789012 111213 -t 本周
+/B话榜对比 123456 789012 -k 女装
+```
+
+一次最多 6 个群；群一多会自动少列几个人，免得图长到没法看。
+
+### 某个成员在几个群里的总量
+
+```text
+/B话榜成员 @某人
+/B话榜成员 12345678 本月
+```
+
+按群列 TA 说了多少，最后给总数。默认统计全部历史，加时间类型就是指定区间。
 
 ## 🗨 命令
 
@@ -333,6 +439,12 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 - [x] 查询带某关键词的消息量
 
 - [x] 合并转发
+
+- [x] 多套配色与排版（暗夜 / 浅色 / 简约 / 暖阳，竖排 / 横排）
+
+- [x] 多模板支持（模板包 + 预览 + 按群切换）
+
+- [x] 更多查询方式（时段分布、星期分布、多群对比、成员跨群）
 
 待补充。.....
 
