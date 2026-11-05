@@ -20,7 +20,7 @@ from nonebot_plugin_uninfo.orm import (
 
 from .config import ScopedConfig
 from .group_config import effective_config
-from .styles import chart_css
+from .styles import chart_css, compare_css
 from .time import get_datetime_now_with_timezone
 from .utils import (
 	get_user_infos_from_db,
@@ -298,7 +298,7 @@ async def compare_report(
 			'title': '多群 B 话对比',
 			'subtitle': subtitle,
 			'groups': groups,
-			'inline_css': chart_css(cfg.theme),
+			'inline_css': compare_css(cfg.theme, cfg.layout),
 		},
 	)
 	return groups, image

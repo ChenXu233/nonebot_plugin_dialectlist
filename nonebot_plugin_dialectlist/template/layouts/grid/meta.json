@@ -1,0 +1,12 @@
+{
+  "name": "横排",
+  "description": "卡片横着铺开，人多时一眼看全",
+  "aliases": [
+    "横",
+    "横向",
+    "平铺",
+    "horizontal",
+    "flat",
+    "tile"
+  ]
+}

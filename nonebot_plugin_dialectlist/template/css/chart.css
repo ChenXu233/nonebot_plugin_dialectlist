@@ -1,43 +1,13 @@
-/* 分布图 / 多群对比共用 */
+/* 图表结构：柱状 / 条形，外壳和主题都在别处 */
 
-.page {
-	padding: 26px 36px;
+.chart_panel {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
-}
-
-.page_title {
-	margin: 0;
-	font-size: 2.1rem;
-	font-weight: 900;
-	letter-spacing: 2px;
-	color: var(--accent);
-	text-shadow: var(--title-glow);
-}
-
-.page_sub {
-	margin: 0;
-	font-size: 1.05rem;
-	color: var(--muted);
-}
-
-.panel {
-	border: 2px solid var(--card-border);
+	margin: 1%;
+	padding: 22px 26px;
 	border-radius: var(--radius);
 	background: var(--panel-bg);
-	box-shadow: var(--card-glow);
-	padding: 22px 26px;
 }
-
-.foot {
-	margin: 4px 0 0;
-	text-align: center;
-	font-size: 0.9rem;
-	color: var(--muted);
-}
-
-/* 柱状图：小时 / 星期 */
 
 .bars {
 	display: flex;
@@ -61,7 +31,7 @@
 
 .bar {
 	width: 100%;
-	border-radius: 6px 6px 0 0;
+	border-radius: var(--chart-bar-radius);
 	background: var(--bar-fill);
 }
 
@@ -70,8 +40,6 @@
 	color: var(--muted);
 	white-space: nowrap;
 }
-
-/* 条形图：群 / 人 横向对比 */
 
 .hbars {
 	display: flex;
@@ -97,7 +65,7 @@
 .hbar_track {
 	flex: 1;
 	height: 22px;
-	border-radius: 999px;
+	border-radius: var(--track-radius);
 	background: var(--track);
 	overflow: hidden;
 }
@@ -105,7 +73,7 @@
 .hbar_fill {
 	height: 100%;
 	min-width: 4px;
-	border-radius: 999px;
+	border-radius: var(--track-radius);
 	background: var(--bar-fill);
 }
 
@@ -115,4 +83,3 @@
 	font-size: 1rem;
 	color: var(--muted);
 }
-

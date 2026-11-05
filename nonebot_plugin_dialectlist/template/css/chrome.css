@@ -1,0 +1,66 @@
+/* 页面外壳：标题卡 + 内容 + 页脚，所有图片种类共用同一套 */
+
+.container {
+	padding: 20px 40px;
+	display: flex;
+	flex-direction: column;
+}
+
+.glow {
+	border: 2px solid var(--card-border);
+	box-shadow: var(--card-glow);
+}
+
+.card,
+.card2 {
+	text-align: center;
+	margin: 1%;
+	border-radius: var(--radius);
+	background: var(--card-bg);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+}
+
+.card {
+	padding: 6px 0 10px;
+}
+
+.card2 {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 14px;
+	padding: 10px;
+}
+
+.center_text {
+	margin: 0.5em 0 0;
+	text-align: center;
+	font-size: 3rem;
+	font-weight: 900;
+	letter-spacing: 2px;
+	color: var(--accent);
+	text-shadow: var(--title-glow);
+}
+
+.center_text2 {
+	margin: 0;
+	text-align: center;
+	font-size: 1.4rem;
+	color: var(--muted);
+}
+
+.card .center_text2 {
+	margin: 6px 0 0;
+	font-size: 1.15rem;
+}
+
+.profile2 {
+	width: 42px;
+	height: 42px;
+	border-radius: 50%;
+	border: 2px solid var(--avatar-border);
+	object-fit: cover;
+	margin: 0;
+}

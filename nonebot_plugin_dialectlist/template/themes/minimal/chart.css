@@ -1,0 +1,19 @@
+/* 简约主题对柱状图的额外调整：细边框、直角的柱子已经由变量给到 */
+
+.chart_panel {
+	border: 1px solid var(--card-border);
+}
+
+.bar {
+	border: 1px solid var(--card-border);
+}
+
+.hbar_track,
+.hbar_fill {
+	border-radius: 0;
+}
+
+.bar_value,
+.bar_label {
+	font-size: 0.75rem;
+}

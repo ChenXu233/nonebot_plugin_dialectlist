@@ -1,0 +1,9 @@
+{
+  "name": "竖排",
+  "description": "一人一行，默认",
+  "aliases": [
+    "行",
+    "纵向",
+    "vertical"
+  ]
+}

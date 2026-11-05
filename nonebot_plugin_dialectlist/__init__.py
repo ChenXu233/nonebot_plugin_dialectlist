@@ -57,12 +57,12 @@ from .templates import (
 	list_templates,
 )
 from .styles import (
-	LAYOUTS,
-	THEMES,
 	find_layout,
 	find_theme,
 	get_layout,
 	get_theme,
+	list_layouts,
+	list_themes,
 	theme_list,
 )
 from .time import (
@@ -74,6 +74,8 @@ from .time import (
 from .usage import __usage__
 from .utils import (
 	RenderError,
+	close_http_client,
+	warmup_http_client,
 	format_rank_text,
 	get_rank_image,
 	get_user_infos,
@@ -394,6 +396,21 @@ async def _register_push_jobs() -> None:
 	register_push_jobs()
 
 
+@get_driver().on_startup
+async def _warmup_avatars_http_client() -> None:
+	"""启动时预建头像连接池，别把首次建连算进第一条命令"""
+	try:
+		await warmup_http_client()
+	except Exception as e:  # noqa: BLE001 - 代理配置坏了也不能拦启动
+		logger.warning(f'[dialectlist] 头像下载连接池初始化失败: {e}')
+
+
+@get_driver().on_shutdown
+async def _close_avatars_http_client() -> None:
+	"""退出时关掉头像下载共用的连接池"""
+	await close_http_client()
+
+
 # ---------------- 群配置 ----------------
 
 _CONFIG_KEYS: Dict[str, str] = {
@@ -547,12 +564,16 @@ def _parse_config_value(key: str, raw: str) -> Any:
 	if key == 'theme':
 		theme = find_theme(text)
 		if theme is None:
-			raise ValueError('可选：' + '、'.join(t.name for t in THEMES))
+			raise ValueError(
+				'可选：' + '、'.join(t.name for t in list_themes().values())
+			)
 		return theme.id
 	if key == 'layout':
 		layout = find_layout(text)
 		if layout is None:
-			raise ValueError('可选：' + '、'.join(g.name for g in LAYOUTS))
+			raise ValueError(
+				'可选：' + '、'.join(g.name for g in list_layouts().values())
+			)
 		return layout.id
 	return text
 

@@ -73,6 +73,8 @@ nb plugin install nonebot-plugin-dialectlist
 > ```
 >
 > 模板的样式、字体和头像已全部内联成 data URI，所以 0.8 的本地文件访问限制不影响出图。
+> 内置字体默认用 GB2312 一级常用字子集（约 480KB），生僻字回落到系统字体；
+> 要完整字库设 `dialectlist__font=full`，想再快一点可以用 `system`。
 > 首次渲染会自动安装 Chromium，也可以手动执行 `playwright install chromium`。
 >
 > 如果渲染真的失败了（比如浏览器没装好），群里会收到一句「图片渲染失败：…」的提示，
@@ -111,7 +113,7 @@ dialectlist__suffix: bool = True  # 是否显示后缀
 dialectlist__visualization: bool = True  # 是否可视化
 dialectlist__show_text_rank: bool = True  # 是否显示文本排名
 dialectlist__excluded_people: List[str] = []  # 排除的人的 QQ 号
-dialectlist__use_user_info_cache: bool = False  # 是否使用用户信息缓存
+dialectlist__use_user_info_cache: bool = True  # 是否使用用户信息缓存（10 秒 TTL）
 dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
 dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
 dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
@@ -119,6 +121,7 @@ dialectlist__template: str = "classic"  # 榜单模板（classic / podium / 自�
 dialectlist__template_path: str = ""  # 老写法：直接指一个 .j2，填了就优先用它
 dialectlist__theme: str = "dark"  # 配色：dark / light / minimal / warm
 dialectlist__layout: str = "list"  # 排版：list（竖排）/ grid（横排）
+dialectlist__font: str = "subset"  # 内置字体：subset（常用字，默认）/ full（全字库）/ system（系统字体）
 dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
 dialectlist__push_enabled: bool = False  # 是否开启定时推送
 dialectlist__push_cron: str = "0 0 * * *"  # 默认推送时间（cron 5 段式）
@@ -218,11 +221,13 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 
 ## 🎨 样式与模板
 
-3.5.0 起，外观拆成三层：**模板**（结构）+ **配色** + **排版**。换配色不用碰模板，换模板也不用改代码。
+3.5.0 起，外观拆成三层：**模板**（结构）+ **样式**（配色）+ **排版**。三者互相独立，换样式不用碰模板，换模板也不用改代码。
 
-### 配色和排版
+### 样式和排版
 
-| 配色 | id | 长什么样 |
+榜单、分布图、多群对比、成员跨群**共用同一套外壳**（标题卡 + 内容 + 页脚），所以换一次配色，所有图一起变，不会出现「榜单是暗色、分布图是白底」这种事。
+
+| 样式 | id | 长什么样 |
 | :-- | :-- | :-- |
 | 暗夜 | `dark` | 霓虹描边 + 深色底，默认 |
 | 浅色 | `light` | 白底卡片，白天看不刺眼 |
@@ -239,12 +244,71 @@ DIALECTLIST__LAYOUT=grid
 群里也能改，改之前可以先看一眼效果：
 
 ```text
-/B话榜样式                 列出所有配色和排版，附当前群用的
+/B话榜样式                 列出所有样式和排版，附当前群用的
 /B话榜样式 浅色             渲一张预览图
-/B话榜样式 浅色 横排        配色和排版一起看
+/B话榜样式 浅色 横排        样式和排版一起看
 /B话榜配置 样式 浅色        这个群以后用浅色
 /B话榜配置 布局 横排
 ```
+
+### 自己做一个样式
+
+样式是**目录**，丢进去就自动认出来，不用改代码、不用重启：
+
+```text
+<插件配置目录>/themes/
+└── myskin/
+    ├── meta.json    # 名字、说明、别名
+    ├── base.css     # 变量和通用外观
+    ├── rank.css     # 可选：这套样式对榜单的额外调整
+    ├── chart.css    # 可选：对分布图 / 成员跨群
+    └── compare.css  # 可选：对多群对比
+```
+
+```json
+{
+  "name": "深海",
+  "description": "深蓝底 + 橙字",
+  "aliases": ["蓝", "night-blue"]
+}
+```
+
+`base.css` 把变量填上就能用，其余自动对齐：
+
+```css
+:root {
+    --bg: #0b1b2b;
+    --fg: #e6f0ff;
+    --muted: #7f95ad;
+    --accent: #ffb648;
+    --card-bg: rgba(12, 35, 58, 0.9);
+    --panel-bg: rgba(10, 30, 52, 0.9);
+    --card-border: #1f4b7a;
+    --card-glow: 0 0 15px rgba(31, 75, 122, 0.6);
+    --title-glow: none;
+    --avatar-border: #1f4b7a;
+    --track: rgba(0, 0, 0, 0.35);
+    --track-radius: 999px;
+    --bar-fill: linear-gradient(90deg, #ffb648, #ff7a45);
+    --chart-bar-radius: 6px 6px 0 0;
+    --radius: 1rem;
+    --medal-1-bg: gold;
+    --medal-1-fg: #9a690e;
+    --medal-2-bg: silver;
+    --medal-2-fg: #505050;
+    --medal-3-bg: #cd7f32;
+    --medal-3-fg: #5f340e;
+}
+```
+
+**没写的部分一律回落到默认样式（暗夜）**：
+
+- 只写 `base.css`，分布图和多群对比就按默认样式那套画，不会变成裸 HTML
+- 只写 `chart.css` 不写 `base.css`，变量也照默认来，只改图表那几行
+- 排版同理：`layouts/<名字>/layout.css`，没写就是竖排
+
+模板和样式的区别：**模板管结构**（一行一行怎么排），**样式管颜色和形态**。两者随便组合，4 套样式 × 2 种排版 × N 个模板。
+
 
 ### 模板包
 
@@ -279,6 +343,9 @@ DIALECTLIST__LAYOUT=grid
 
 想整套自己写样式，就在模板目录里放 `css/style.css`——放了它就不再套主题，整份样式由你决定。
 字体和图片照样会被内联成 data URI，不用管 htmlrender 的本地文件访问限制。
+
+内置字体为了出图速度只保留 GB2312 一级常用字（生僻字用系统字体兜底）；
+`dialectlist__font` 可选 `subset`（默认）/ `full`（完整字库）/ `system`（不内联字体）。
 
 `template_path` 老写法（直接指一个 `.j2` 文件）仍然兼容，指向的文件不存在会自动退回按模板名选。
 

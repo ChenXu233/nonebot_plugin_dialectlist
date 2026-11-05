@@ -22,7 +22,10 @@ for name in (
 	nonebot.load_plugin(name)
 
 from nonebot_plugin_dialectlist.schema import UserRankInfo  # noqa: E402
-from nonebot_plugin_dialectlist.styles import chart_css  # noqa: E402
+from nonebot_plugin_dialectlist.styles import (  # noqa: E402
+	chart_css,
+	compare_css,
+)
 from nonebot_plugin_dialectlist.utils import get_rank_image, render_page  # noqa: E402
 
 OUT = 'preview'
@@ -148,7 +151,7 @@ async def main():
 		'title': '多群 B 话对比',
 		'subtitle': '今日 · 共 3 个群',
 		'groups': groups,
-		'inline_css': chart_css('dark'),
+		'inline_css': compare_css('dark', 'list'),
 	}))
 
 	items = [

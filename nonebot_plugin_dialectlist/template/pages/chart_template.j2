@@ -6,11 +6,13 @@
 		<style>{{ inline_css|safe }}</style>
 	</head>
 	<body>
-		<div class="page">
-			<p class="page_title">{{ title }}</p>
-			<p class="page_sub">{{ subtitle }}</p>
+		<div class="container">
+			<div class="card glow">
+				<p class="center_text">{{ title }}</p>
+				<p class="center_text2">{{ subtitle }}</p>
+			</div>
 
-			<div class="panel">
+			<div class="chart_panel glow">
 				{% if mode == 'bar' %}
 				<div class="bars">
 					{% for item in items %}
@@ -39,7 +41,10 @@
 				{% endif %}
 			</div>
 
-			<p class="foot">{{ footer }}</p>
+			<div class="card2 glow">
+				<img class="profile2" src="https://q2.qlogo.cn/headimg_dl?dst_uin=1964324406&spec=100"/>
+				<p class="center_text2">Designed By ChenXu233</p>
+			</div>
 		</div>
 	</body>
 </html>

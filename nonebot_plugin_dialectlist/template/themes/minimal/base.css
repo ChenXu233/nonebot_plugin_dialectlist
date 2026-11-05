@@ -12,7 +12,9 @@
 	--title-glow: none;
 	--avatar-border: #111111;
 	--track: #eaeaea;
+	--track-radius: 0;
 	--bar-fill: #111111;
+	--chart-bar-radius: 0;
 	--radius: 0;
 	--medal-1-bg: #111111;
 	--medal-1-fg: #ffffff;

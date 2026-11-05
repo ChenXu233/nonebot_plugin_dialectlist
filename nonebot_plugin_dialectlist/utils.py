@@ -1,7 +1,10 @@
 import asyncio
+import base64
 import inspect
 import os
-from typing import Any, Dict, List, Optional
+import time
+from urllib.parse import unquote_to_bytes
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -49,6 +52,16 @@ _NEW_RENDER_API = (
 	and 'variables' in inspect.signature(render_template).parameters
 )
 _VIEWPORT = {'viewport': {'width': 1000, 'height': 10}}
+
+# 头像：共享连接 + 按 URL 缓存；单次失败不再拖住整条命令
+_AVATAR_TIMEOUT = 10.0
+_AVATAR_RETRY_DELAYS = (1.0, 2.0)
+_AVATAR_CACHE_TTL = 3600.0
+_AVATAR_CACHE_MAX = 256
+_avatar_cache: Dict[str, Tuple[bytes, float]] = {}
+_default_avatar: Optional[bytes] = None
+_http_client: Optional[httpx.AsyncClient] = None
+_http_client_lock: Optional[asyncio.Lock] = None
 
 
 class RenderError(RuntimeError):
@@ -214,27 +227,145 @@ def _get_user_nickname(user_info: UserInfo) -> str:
 
 
 async def _get_user_default_avatar() -> bytes:
-	with open(
-		os.path.dirname(os.path.abspath(__file__))
-		+ '/template/avatar/default.jpg',
-		'rb',
-	) as f:
-		return f.read()
+	"""默认头像只读一次，别每个用户都开一次文件"""
+	global _default_avatar
+	if _default_avatar is None:
+		path = os.path.join(
+			os.path.dirname(os.path.abspath(__file__)),
+			'template',
+			'avatar',
+			'default.jpg',
+		)
+		with open(path, 'rb') as f:
+			_default_avatar = f.read()
+	return _default_avatar
 
 
-async def _get_user_avatar(user: UserInfo, client: httpx.AsyncClient) -> bytes:
+async def _get_http_client() -> httpx.AsyncClient:
+	"""全插件共用一个连接池，避免每条命令都新建 AsyncClient"""
+	global _http_client, _http_client_lock
+	client = _http_client
+	if client is not None and not client.is_closed:
+		return client
+	if _http_client_lock is None:
+		_http_client_lock = asyncio.Lock()
+	async with _http_client_lock:
+		if _http_client is None or _http_client.is_closed:
+			try:
+				_http_client = httpx.AsyncClient(
+					timeout=httpx.Timeout(_AVATAR_TIMEOUT),
+					follow_redirects=True,
+				)
+			except Exception as e:  # noqa: BLE001 - 坏代理配置很常见
+				logger.warning(
+					f'创建共享 HTTP 客户端失败，改用忽略系统代理的配置: {e}'
+				)
+				_http_client = httpx.AsyncClient(
+					timeout=httpx.Timeout(_AVATAR_TIMEOUT),
+					follow_redirects=True,
+					trust_env=False,
+				)
+		return _http_client
+
+
+async def warmup_http_client() -> None:
+	"""启动时先把连接池建好，坏代理只影响一次启动日志"""
+	await _get_http_client()
+
+
+async def close_http_client() -> None:
+	"""bot 退出时释放连接池"""
+	global _http_client
+	client = _http_client
+	_http_client = None
+	if client is not None and not client.is_closed:
+		await client.aclose()
+
+
+def clear_avatar_cache() -> None:
+	_avatar_cache.clear()
+
+
+def _cache_get_avatar(url: str) -> Optional[bytes]:
+	entry = _avatar_cache.get(url)
+	if entry is None:
+		return None
+	data, expires_at = entry
+	if expires_at <= time.monotonic():
+		_avatar_cache.pop(url, None)
+		return None
+	return data
+
+
+def _cache_put_avatar(url: str, data: bytes) -> None:
+	now = time.monotonic()
+	if len(_avatar_cache) >= _AVATAR_CACHE_MAX:
+		for key in [
+			key
+			for key, (_, expires_at) in _avatar_cache.items()
+			if expires_at <= now
+		]:
+			_avatar_cache.pop(key, None)
+		while len(_avatar_cache) >= _AVATAR_CACHE_MAX:
+			_avatar_cache.pop(next(iter(_avatar_cache)))
+	_avatar_cache[url] = (data, now + _AVATAR_CACHE_TTL)
+
+
+def _data_uri_payload(url: str) -> Optional[bytes]:
+	header, separator, payload = url.partition(',')
+	if not separator:
+		return None
+	try:
+		if ';base64' in header:
+			return base64.b64decode(payload)
+		return unquote_to_bytes(payload)
+	except Exception:  # noqa: BLE001 - 坏 data URI 直接当失败处理
+		return None
+
+
+async def _download_avatar(
+	url: str, client: Optional[httpx.AsyncClient]
+) -> bytes:
+	"""下载单个头像：先查缓存，失败时短退避重试两次"""
+	cached = _cache_get_avatar(url)
+	if cached is not None:
+		return cached
+	if url.startswith('data:'):
+		payload = _data_uri_payload(url)
+		if payload is None:
+			raise NetworkError('用户头像的 data URI 不合法')
+		_cache_put_avatar(url, payload)
+		return payload
+	if client is None:
+		raise NetworkError(f'{url} 没有可用的 HTTP 客户端')
+
+	last_error: Optional[Exception] = None
+	for attempt in range(len(_AVATAR_RETRY_DELAYS) + 1):
+		try:
+			resp = await client.get(url, timeout=_AVATAR_TIMEOUT)
+			resp.raise_for_status()
+			if not resp.content:
+				raise NetworkError(f'{url} 返回了空内容')
+			_cache_put_avatar(url, resp.content)
+			return resp.content
+		except Exception as e:  # noqa: BLE001 - 网络问题统一重试
+			last_error = e
+			if attempt < len(_AVATAR_RETRY_DELAYS):
+				delay = _AVATAR_RETRY_DELAYS[attempt]
+				logger.warning(
+					f'Error downloading {url}, retry {attempt + 1}/'
+					f'{len(_AVATAR_RETRY_DELAYS)} after {delay}s: {e}'
+				)
+				await asyncio.sleep(delay)
+	raise NetworkError(f'{url} 下载失败！') from last_error
+
+
+async def _get_user_avatar(
+	user: UserInfo, client: Optional[httpx.AsyncClient]
+) -> bytes:
 	if not user.user_avatar:
 		return await _get_user_default_avatar()
-	url = user.user_avatar.get_url()
-	for i in range(3):
-		try:
-			resp = await client.get(url, timeout=10)
-			resp.raise_for_status()
-			return resp.content
-		except Exception as e:
-			logger.warning(f'Error downloading {url}, retry {i}/3: {e}')
-			await asyncio.sleep(3)
-	raise NetworkError(f'{url} 下载失败！')
+	return await _download_avatar(user.user_avatar.get_url(), client)
 
 
 def get_default_user_info() -> UserInfo:
@@ -245,31 +376,53 @@ def get_default_user_info() -> UserInfo:
 	return user_info
 
 
-async def _load_avatars(user_infos: List[Optional[UserInfo]]) -> List[bytes]:
-	"""并发下载头像，任何一步失败都回落到默认头像"""
-	default = await _get_user_default_avatar()
+def _get_avatar_url(info: Optional[UserInfo]) -> Optional[str]:
+	"""取头像地址；用户信息源的实现坏了也不能拖垮整条命令"""
+	if info is None or not info.user_avatar:
+		return None
 	try:
-		async with httpx.AsyncClient() as client:
-			pool = [
-				_get_user_avatar(info, client)
-				if info and info.user_avatar
-				else _get_user_default_avatar()
-				for info in user_infos
-			]
-			results = await asyncio.gather(*pool, return_exceptions=True)
-	except Exception as e:
-		# 例如环境里的代理配置异常，连 client 都创建不出来
-		logger.warning(f'初始化 HTTP 客户端失败，头像统一使用默认图: {e}')
+		return info.user_avatar.get_url()
+	except Exception as e:  # noqa: BLE001 - 第三方头像源可能抛任何异常
+		logger.warning(f'读取用户头像地址失败，已使用默认头像: {e}')
+		return None
+
+
+async def _load_avatars(
+	user_infos: List[Optional[UserInfo]],
+) -> List[bytes]:
+	"""并发下载头像：同 URL 只下一次，结果按 URL 缓存"""
+	default = await _get_user_default_avatar()
+	urls: List[Optional[str]] = [_get_avatar_url(info) for info in user_infos]
+	unique_urls: List[str] = []
+	seen: set[str] = set()
+	for url in urls:
+		if url is not None and url not in seen:
+			seen.add(url)
+			unique_urls.append(url)
+	if not unique_urls:
+		# 没有头像就别创建 HTTP 客户端
 		return [default for _ in user_infos]
 
-	user_avatars: List[bytes] = []
-	for result in results:
+	needs_http = any(not url.startswith('data:') for url in unique_urls)
+	client: Optional[httpx.AsyncClient] = None
+	if needs_http:
+		try:
+			client = await _get_http_client()
+		except Exception as e:  # noqa: BLE001 - 例如代理配置异常
+			logger.warning(f'初始化 HTTP 客户端失败，头像统一使用默认图: {e}')
+			return [default for _ in user_infos]
+
+	fetched = await asyncio.gather(
+		*[_download_avatar(url, client) for url in unique_urls],
+		return_exceptions=True,
+	)
+	by_url: Dict[str, bytes] = {}
+	for url, result in zip(unique_urls, fetched):
 		if isinstance(result, BaseException):
 			logger.warning(f'获取用户头像失败，已使用默认头像: {result}')
-			user_avatars.append(default)
 		else:
-			user_avatars.append(result)
-	return user_avatars
+			by_url[url] = result
+	return [by_url.get(url, default) if url else default for url in urls]
 
 
 async def _build_rank_infos(

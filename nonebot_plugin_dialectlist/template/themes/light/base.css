@@ -12,7 +12,9 @@
 	--title-glow: none;
 	--avatar-border: #e6eaf3;
 	--track: rgba(58, 122, 254, 0.12);
+	--track-radius: 999px;
 	--bar-fill: linear-gradient(90deg, #4f8bff, #7c6bff);
+	--chart-bar-radius: 6px 6px 0 0;
 	--radius: 1rem;
 	--medal-1-bg: #ffd766;
 	--medal-1-fg: #8a6414;

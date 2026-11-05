@@ -1,0 +1,58 @@
+/* 多群对比：一个群一截，比榜单紧凑一些 */
+
+.compare_group {
+	margin: 1%;
+}
+
+.compare_head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	width: 100%;
+	padding: 4px 20px 0;
+}
+
+.compare_name {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--accent);
+}
+
+.compare_total {
+	font-size: 1rem;
+	color: var(--muted);
+}
+
+.compare_group .rank_number {
+	margin: 0 12px;
+	min-width: 30px;
+	height: 30px;
+	font-size: 0.95rem;
+}
+
+.compare_group .profile {
+	width: 44px;
+	height: 44px;
+	max-width: 44px;
+	max-height: 44px;
+	margin-right: 12px;
+}
+
+.compare_group .rank_card_info h1 {
+	font-size: 1.15rem;
+	margin-bottom: 4px;
+}
+
+.compare_group .rank_card_info p {
+	font-size: 0.85rem;
+	margin-top: 3px;
+}
+
+.compare_group .rank_card {
+	margin: 4px;
+	padding-right: 14px;
+}
+
+.compare_group .g-container {
+	height: 12px;
+}
