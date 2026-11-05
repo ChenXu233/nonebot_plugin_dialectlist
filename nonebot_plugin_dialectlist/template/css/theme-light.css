@@ -1,0 +1,29 @@
+/* 浅色：白底卡片，白天看不刺眼 */
+
+:root {
+	--bg: #f5f6fa;
+	--fg: #2b2b33;
+	--muted: #8a90a0;
+	--accent: #3a7afe;
+	--card-bg: #ffffff;
+	--panel-bg: rgba(255, 255, 255, 0.8);
+	--card-border: #e2e7f2;
+	--card-glow: 0 8px 24px rgba(38, 60, 120, 0.09);
+	--title-glow: none;
+	--avatar-border: #e6eaf3;
+	--track: rgba(58, 122, 254, 0.12);
+	--bar-fill: linear-gradient(90deg, #4f8bff, #7c6bff);
+	--radius: 1rem;
+	--medal-1-bg: #ffd766;
+	--medal-1-fg: #8a6414;
+	--medal-2-bg: #dfe4ee;
+	--medal-2-fg: #6b7280;
+	--medal-3-bg: #f0c39b;
+	--medal-3-fg: #8a5a2b;
+}
+
+body {
+	background-image:
+		radial-gradient(circle at 10% 0%, #e9efff 0%, transparent 45%),
+		radial-gradient(circle at 90% 100%, #ffeef4 0%, transparent 45%);
+}

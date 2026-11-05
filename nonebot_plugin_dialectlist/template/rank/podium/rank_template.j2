@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8">
+		<title>话痨排行榜</title>
+		<style>{{ inline_css|safe }}</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="card glow">
+				<p class="center_text">话痨排行榜</p>
+			</div>
+
+			<div class="podium">
+				{% for i in users[:3] %}
+				<div class="podium_card podium_{{ i.user_index }}">
+					<div class="podium_rank">{{ i.user_index }}</div>
+					<img class="podium_avatar" src="{{ i.user_avatar_data_uri }}"/>
+					<div class="podium_name">{{ i.user_nickname }} {{ i.user_gender }}</div>
+					<div class="podium_count">{{ i.user_bnum }} 条</div>
+					<div class="g-container podium_bar">
+						<div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+
+			{% if users|length > 3 %}
+			<div class="rank_container glow">
+				{% for i in users[3:] %}
+				<div class="rank_card">
+					<div class="rank">
+						<div class="rank_number">{{ i.user_index }}</div>
+					</div>
+					<div class="avatar">
+						<img class="profile small" src="{{ i.user_avatar_data_uri }}"/>
+					</div>
+					<div class="rank_card_info">
+						<h1>{{ i.user_nickname }} {{ i.user_gender }}</h1>
+						<div class="g-container">
+							<div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
+						</div>
+					</div>
+					<div class="rank">
+						<div class="rank_number">{{ i.user_bnum }}</div>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+
+			<div class="card2 glow">
+				<img class="profile2" src="https://q2.qlogo.cn/headimg_dl?dst_uin=1964324406&spec=100"/>
+				<p class="center_text2">Designed By ChenXu233</p>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,29 @@
+/* 暖阳：米色底 + 橙粉渐变 */
+
+:root {
+	--bg: #fff8f0;
+	--fg: #3d2b1f;
+	--muted: #a08a78;
+	--accent: #ff7a45;
+	--card-bg: #ffffff;
+	--panel-bg: rgba(255, 255, 255, 0.8);
+	--card-border: #ffd9c2;
+	--card-glow: 0 10px 26px rgba(255, 122, 69, 0.14);
+	--title-glow: none;
+	--avatar-border: #ffe2d2;
+	--track: rgba(255, 122, 69, 0.14);
+	--bar-fill: linear-gradient(90deg, #ffa14a, #ff5f8f);
+	--radius: 1.2rem;
+	--medal-1-bg: #ffb647;
+	--medal-1-fg: #7a4a05;
+	--medal-2-bg: #ffd9c2;
+	--medal-2-fg: #8a5a2b;
+	--medal-3-bg: #f0d3ba;
+	--medal-3-fg: #7a5a3f;
+}
+
+body {
+	background-image:
+		radial-gradient(circle at 0% 0%, #ffe9d6 0%, transparent 50%),
+		radial-gradient(circle at 100% 100%, #ffe3ec 0%, transparent 50%);
+}

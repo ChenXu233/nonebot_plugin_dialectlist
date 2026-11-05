@@ -16,7 +16,10 @@ class GroupConfig(BaseModel):
 	"""单个群的覆盖配置，None 表示沿用全局"""
 
 	enabled: Optional[bool] = None  # 这个群是否允许查询/推送
+	template: Optional[str] = None
 	template_path: Optional[str] = None
+	theme: Optional[str] = None
+	layout: Optional[str] = None
 	get_num: Optional[int] = None
 	visualization: Optional[bool] = None
 	show_text_rank: Optional[bool] = None
@@ -34,7 +37,10 @@ class GroupConfig(BaseModel):
 # 能覆盖全局 ScopedConfig 的字段
 OVERRIDE_KEYS = (
 	'enabled',
+	'template',
 	'template_path',
+	'theme',
+	'layout',
 	'get_num',
 	'visualization',
 	'show_text_rank',

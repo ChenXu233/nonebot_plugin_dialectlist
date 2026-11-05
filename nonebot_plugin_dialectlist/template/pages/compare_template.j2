@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8">
+		<title>{{ title }}</title>
+		<style>{{ inline_css|safe }}</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="card glow">
+				<p class="center_text">{{ title }}</p>
+				<p class="center_text2">{{ subtitle }}</p>
+			</div>
+
+			{% for group in groups %}
+			<div class="rank_container glow compare_group">
+				<div class="compare_head">
+					<span class="compare_name">{{ group.name }}</span>
+					<span class="compare_total">共 {{ group.total }} 条</span>
+				</div>
+				{% for user in group.users %}
+				<div class="rank_card">
+					<div class="rank">
+						<div class="rank_number rank_number_{{ user.user_index }}">{{ user.user_index }}</div>
+					</div>
+					<div class="avatar">
+						<img class="profile" src="{{ user.user_avatar_data_uri }}"/>
+					</div>
+					<div class="rank_card_info">
+						<h1>{{ user.user_nickname }} {{ user.user_gender }}</h1>
+						<div class="g-container">
+							<div class="g-progress" style="width: {{ user.user_proportion }}%"></div>
+						</div>
+						<p>{{ user.user_bnum }} 条</p>
+					</div>
+				</div>
+				{% endfor %}
+			</div>
+			{% endfor %}
+
+			<div class="card2 glow">
+				<img class="profile2" src="https://q2.qlogo.cn/headimg_dl?dst_uin=1964324406&spec=100"/>
+				<p class="center_text2">Designed By ChenXu233</p>
+			</div>
+		</div>
+	</body>
+</html>

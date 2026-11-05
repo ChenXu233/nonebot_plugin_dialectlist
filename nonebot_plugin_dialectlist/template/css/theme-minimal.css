@@ -1,0 +1,31 @@
+/* 简约：纯黑白，去掉发光、渐变和圆角 */
+
+:root {
+	--bg: #ffffff;
+	--fg: #111111;
+	--muted: #777777;
+	--accent: #111111;
+	--card-bg: #ffffff;
+	--panel-bg: #ffffff;
+	--card-border: #111111;
+	--card-glow: none;
+	--title-glow: none;
+	--avatar-border: #111111;
+	--track: #eaeaea;
+	--bar-fill: #111111;
+	--radius: 0;
+	--medal-1-bg: #111111;
+	--medal-1-fg: #ffffff;
+	--medal-2-bg: #555555;
+	--medal-2-fg: #ffffff;
+	--medal-3-bg: #9a9a9a;
+	--medal-3-fg: #ffffff;
+}
+
+.center_text {
+	letter-spacing: 6px;
+}
+
+.glow {
+	box-shadow: none;
+}

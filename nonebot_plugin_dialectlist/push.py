@@ -19,7 +19,6 @@ from .utils import (
 	get_user_infos_from_db,
 	get_user_message_counts,
 	got_rank,
-	persist_id2user_id,
 )
 
 
@@ -107,16 +106,19 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 	rank = got_rank(dict(counts), cfg.get_num or group_cfg.get_num)
 	if not rank:
 		return
-	id_map = await persist_id2user_id([item[0] for item in rank])
-	for item in rank:
-		item[0] = id_map.get(item[0], str(item[0]))
-
+	# get_user_infos_from_db 要的是持久化 id，这里不能先换成平台号
 	rank2 = await get_user_infos_from_db(group_id, rank)
 	text = format_rank_text(rank2, cfg=group_cfg)
 	msg = saa.Text(text) if text else None
 	if group_cfg.visualization:
 		try:
-			image = await get_rank_image(rank2, group_cfg.template_path)
+			image = await get_rank_image(
+				rank2,
+				group_cfg.template_path,
+				group_cfg.theme,
+				group_cfg.layout,
+				group_cfg.template,
+			)
 		except RenderError as e:
 			logger.exception(f'[push] 群 {group_id} 渲染图片失败，改为只发文字')
 			note = saa.Text(f'\n（图片渲染失败：{e}，管理员可以看日志）')

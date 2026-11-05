@@ -17,10 +17,10 @@ require('nonebot_plugin_localstore')
 import re
 import time as t
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import nonebot_plugin_saa as saa
-from arclet.alconna import ArparmaBehavior
+from arclet.alconna import ArparmaBehavior, MultiVar
 from arclet.alconna.arparma import Arparma
 from nonebot import on_command
 from nonebot.adapters import Bot, Event, Message
@@ -39,9 +39,32 @@ from nonebot_plugin_alconna import (
 )
 from nonebot_plugin_uninfo import Session, Uninfo, get_session
 
+from .charts import (
+	WEEKDAY_LABELS,
+	compare_report,
+	histogram_report,
+	member_report,
+	resolve_group_names,
+	user_display_name,
+)
 from .config import Config, plugin_config
 from .group_config import effective_config, resolve_push_config, store
 from .push import register_push_jobs
+from .templates import (
+	describe as describe_templates,
+	find_template,
+	get_template,
+	list_templates,
+)
+from .styles import (
+	LAYOUTS,
+	THEMES,
+	find_layout,
+	find_theme,
+	get_layout,
+	get_theme,
+	theme_list,
+)
 from .time import (
 	get_datetime_fromisoformat_with_timezone,
 	get_datetime_now_with_timezone,
@@ -159,6 +182,7 @@ rank_cmd = on_alconna(
 		],
 		Option('-g|--group_id', Args['group_id?', str]),
 		Option('-k|--keyword', Args['keyword?', str]),
+		Option('-m|--template', Args['template?', str]),
 		behaviors=[SameTime()],
 	),
 	aliases={'废话榜'},
@@ -207,6 +231,7 @@ async def _group_message(
 		state['group_id'] = group_id
 
 	state['keyword'] = keyword
+	state['period'] = type
 
 	if not type:
 		await rank_cmd.finish(__plugin_meta__.usage)
@@ -259,6 +284,7 @@ async def handle_rank(
 	state: T_State,
 	bot: Bot,
 	event: Event,
+	template: Match[str],
 	session: Session = Depends(get_session),
 	start: datetime = Arg(),
 	stop: datetime = Arg(),
@@ -276,6 +302,13 @@ async def handle_rank(
 	cfg = effective_config(str(id))
 	if not cfg.enabled:
 		await saa.Text('这个群的排行榜功能被关掉了，找管理员开一下。').finish()
+
+	# -m 只在这一次生效，不改群配置
+	chosen = template.result if getattr(template, 'available', False) else None
+	if chosen and find_template(chosen) is None:
+		await saa.Text(
+			f'没有「{chosen}」这个模板。\n\n{describe_templates()}'
+		).finish()
 
 	keyword = state['keyword']
 
@@ -316,7 +349,13 @@ async def handle_rank(
 	if cfg.visualization:
 		t1 = t.time()
 		try:
-			image = await get_rank_image(rank2, cfg.template_path)
+			image = await get_rank_image(
+				rank2,
+				cfg.template_path,
+				cfg.theme,
+				cfg.layout,
+				chosen or cfg.template,
+			)
 		except RenderError as e:
 			logger.error(TROUBLESHOOTING)
 			msg += saa.Text(
@@ -351,8 +390,17 @@ _CONFIG_KEYS: Dict[str, str] = {
 	'开关': 'enabled',
 	'启用': 'enabled',
 	'enabled': 'enabled',
-	'模板': 'template_path',
+	'模板': 'template',
+	'template': 'template',
+	'模板路径': 'template_path',
 	'template_path': 'template_path',
+	'样式': 'theme',
+	'主题': 'theme',
+	'配色': 'theme',
+	'theme': 'theme',
+	'布局': 'layout',
+	'排版': 'layout',
+	'layout': 'layout',
 	'人数': 'get_num',
 	'get_num': 'get_num',
 	'图片': 'visualization',
@@ -390,7 +438,10 @@ _INT_KEYS = {'get_num', 'push_min_messages', 'push_min_members', 'push_get_num'}
 
 _CONFIG_DESC: Dict[str, str] = {
 	'enabled': '这个群是否允许排行榜（查询和推送都会停）',
-	'template_path': '这个群用的模板文件路径',
+	'template': '这个群用哪套模板（/B话榜模板 可以看有哪些）',
+	'template_path': '直接指定模板文件的老写法，填了就优先用这个文件',
+	'theme': '图片配色：暗夜 / 浅色 / 简约 / 暖阳',
+	'layout': '图片排版：竖排 / 横排',
 	'get_num': '榜单展示人数',
 	'visualization': '是否输出排行榜图片',
 	'show_text_rank': '是否输出文字榜单',
@@ -476,6 +527,23 @@ def _parse_config_value(key: str, raw: str) -> Any:
 		if len(text.split()) != 5:
 			raise ValueError('cron 需要 5 段，比如 0 8 * * *')
 		return text
+	if key == 'template':
+		template = find_template(text)
+		if template is None:
+			raise ValueError(
+				'可选：' + '、'.join(t.name for t in list_templates().values())
+			)
+		return template.name
+	if key == 'theme':
+		theme = find_theme(text)
+		if theme is None:
+			raise ValueError('可选：' + '、'.join(t.name for t in THEMES))
+		return theme.id
+	if key == 'layout':
+		layout = find_layout(text)
+		if layout is None:
+			raise ValueError('可选：' + '、'.join(g.name for g in LAYOUTS))
+		return layout.id
 	return text
 
 
@@ -489,7 +557,18 @@ def _format_group_config(group_id: str) -> str:
 
 	rows = [
 		('开关', on_off(cfg.enabled), group.enabled),
-		('模板', cfg.template_path, group.template_path),
+		(
+			'模板',
+			get_template(cfg.template).title
+			if not cfg.template_path
+			else f'文件 {cfg.template_path}',
+			group.template or group.template_path,
+		),
+		(
+			'样式',
+			f'{get_theme(cfg.theme).name} / {get_layout(cfg.layout).name}',
+			(group.theme or group.layout),
+		),
 		('人数', str(cfg.get_num), group.get_num),
 		('图片', on_off(cfg.visualization), group.visualization),
 		('文字', on_off(cfg.show_text_rank), group.show_text_rank),
@@ -582,3 +661,362 @@ async def handle_reload(
 	await reload_cmd.finish(
 		f'已重新读取 {len(store.all())} 个群的配置，定时任务已刷新。'
 	)
+
+
+# ---------------- 样式 / 模板预览 ----------------
+
+
+async def _preview_image(
+	bot: Bot,
+	event: Event,
+	session: Session,
+	cfg: Any,
+	theme: Optional[str],
+	layout: Optional[str],
+	template: Optional[str],
+	template_path: Optional[str] = None,
+) -> Any:
+	"""拿今天的数据渲一张预览图，今天没消息就退回历史"""
+	now = get_datetime_now_with_timezone()
+	start, stop = resolve_period_range('今日', now) or (now, now)
+	counts = await get_user_message_counts(
+		scene_ids=[session.scene.id],
+		types=['message'],
+		time_start=start,
+		time_stop=stop,
+		exclude_user_ids=cfg.excluded_people,
+	)
+	if not counts:
+		# 今天还没人说话，就用历史数据凑一张，不然预览是白图
+		counts = await get_user_message_counts(
+			scene_ids=[session.scene.id],
+			types=['message'],
+			exclude_user_ids=cfg.excluded_people,
+		)
+	if not counts:
+		return None
+
+	rank = got_rank(counts, cfg.get_num)
+	id_map = await persist_id2user_id([item[0] for item in rank])
+	for item in rank:
+		item[0] = id_map.get(item[0], str(item[0]))
+	rank2 = await get_user_infos(bot, event, rank, cfg.use_user_info_cache)
+	return await get_rank_image(rank2, template_path, theme, layout, template)
+
+
+style_cmd = on_command(
+	'B话榜样式', aliases={'话痨榜样式', '排行榜样式'}, block=True, priority=5
+)
+
+
+@style_cmd.handle()
+async def handle_style(
+	bot: Bot,
+	event: Event,
+	args: Message = CommandArg(),
+	session: Session = Depends(get_session),
+):
+	if session.scene.is_private:
+		await style_cmd.finish('这个指令要在群里用哦。')
+
+	cfg = effective_config(str(session.scene.id))
+	text = args.extract_plain_text().strip()
+	if not text:
+		await style_cmd.finish(
+			f'当前群是 {get_theme(cfg.theme).name} / {get_layout(cfg.layout).name}'
+			f'\n\n{theme_list()}'
+		)
+
+	parts = text.split()
+	theme = find_theme(parts[0])
+	if theme is None:
+		await style_cmd.finish(
+			f'没有「{parts[0]}」这个样式。\n\n{theme_list()}'
+		)
+	layout = get_layout(cfg.layout)
+	if len(parts) > 1:
+		picked = find_layout(parts[1])
+		if picked is None:
+			await style_cmd.finish(
+				f'没有「{parts[1]}」这种排版。\n\n{theme_list()}'
+			)
+		layout = picked
+
+	try:
+		image = await _preview_image(
+			bot,
+			event,
+			session,
+			cfg,
+			theme.id,
+			layout.id,
+			cfg.template,
+			cfg.template_path,
+		)
+	except RenderError as e:
+		logger.error(TROUBLESHOOTING)
+		await style_cmd.finish(f'渲染失败：{e}')
+	if image is None:
+		await style_cmd.finish('这个群还没有聊天记录，没法预览。')
+
+	hint = f'\n\n样式预览：{theme.name} / {layout.name}'
+	if theme.id != get_theme(cfg.theme).id:
+		hint += f'\n想用就发 /B话榜配置 样式 {theme.name}'
+	if layout.id != get_layout(cfg.layout).id:
+		hint += f'\n排版就用 /B话榜配置 布局 {layout.name}'
+	await (saa.Image(image) + saa.Text(hint)).finish(reply=True)
+
+
+template_cmd = on_command(
+	'B话榜模板', aliases={'话痨榜模板', '排行榜模板'}, block=True, priority=5
+)
+
+
+@template_cmd.handle()
+async def handle_template(
+	bot: Bot,
+	event: Event,
+	args: Message = CommandArg(),
+	session: Session = Depends(get_session),
+):
+	if session.scene.is_private:
+		await template_cmd.finish('这个指令要在群里用哦。')
+
+	cfg = effective_config(str(session.scene.id))
+	text = args.extract_plain_text().strip()
+	if not text:
+		current = get_template(cfg.template)
+		await template_cmd.finish(
+			f'当前群用的是「{current.title}」（{current.name}）'
+			f'\n\n{describe_templates()}'
+		)
+
+	chosen = find_template(text)
+	if chosen is None:
+		await template_cmd.finish(
+			f'没有「{text}」这个模板。\n\n{describe_templates()}'
+		)
+
+	try:
+		image = await _preview_image(
+			bot,
+			event,
+			session,
+			cfg,
+			cfg.theme,
+			cfg.layout,
+			chosen.name,
+		)
+	except RenderError as e:
+		logger.error(TROUBLESHOOTING)
+		await template_cmd.finish(f'渲染失败：{e}')
+	if image is None:
+		await template_cmd.finish('这个群还没有聊天记录，没法预览。')
+
+	hint = f'\n\n模板预览：{chosen.title}（{chosen.name}）'
+	if chosen.name != get_template(cfg.template).name:
+		hint += f'\n想用就发 /B话榜配置 模板 {chosen.name}'
+	await (saa.Image(image) + saa.Text(hint)).finish(reply=True)
+
+
+# ---------------- 分布图 ----------------
+
+
+dist_cmd = on_alconna(
+	Alconna(
+		'B话榜分布',
+		Args['type?', ['今日', '昨日', '本周', '上周', '本月', '上月', '年度']][
+			'dim?', ['小时', '星期']
+		],
+		Option('-g|--group_id', Args['group_id?', str]),
+		Option('-k|--keyword', Args['keyword?', str]),
+	),
+	aliases={'话痨榜分布'},
+	use_cmd_start=True,
+	block=True,
+)
+
+
+@dist_cmd.handle()
+async def handle_dist(
+	bot: Bot,
+	type: Optional[str] = None,
+	dim: Optional[str] = None,
+	group_id: Optional[str] = None,
+	keyword: Optional[str] = None,
+	session: Session = Depends(get_session),
+):
+	gid = str(group_id or session.scene.id)
+	cfg = effective_config(gid)
+	if not cfg.enabled:
+		await dist_cmd.finish('这个群的排行榜功能被关掉了，找管理员开一下。')
+
+	period = type or '今日'
+	mode = 'week' if dim in ('星期', '周', 'week') else 'hour'
+	now = get_datetime_now_with_timezone()
+	time_range = resolve_period_range(period, now)
+	if time_range is None:
+		await dist_cmd.finish(f'不认识的时间类型：{period}')
+	start, stop = time_range
+
+	names = await resolve_group_names(bot, [gid])
+	try:
+		values, image = await histogram_report(
+			[gid], names[gid], period, start, stop, mode, cfg, keyword
+		)
+	except RenderError as e:
+		logger.error(TROUBLESHOOTING)
+		await dist_cmd.finish(f'渲染失败：{e}')
+
+	total = sum(values)
+	if total <= 0:
+		await dist_cmd.finish('这段时间没有消息，画不出来。')
+
+	peak_index = max(range(len(values)), key=lambda index: values[index])
+	peak_label = (
+		f'{peak_index:02d} 点' if mode == 'hour' else WEEKDAY_LABELS[peak_index]
+	)
+	await (
+		saa.Image(image)
+		+ saa.Text(
+			f'\n{names[gid]} · {period} · 共 {total} 条\n'
+			f'{"时段" if mode == "hour" else "星期"}扛把子是 {peak_label}，'
+			f'{values[peak_index]} 条'
+		)
+	).finish(reply=True)
+
+
+# ---------------- 多群对比 ----------------
+
+
+compare_cmd = on_alconna(
+	Alconna(
+		'B话榜对比',
+		Args['groups', MultiVar(str, '+')],
+		Option(
+			'-t|--time',
+			Args[
+				'type?',
+				['今日', '昨日', '本周', '上周', '本月', '上月', '年度'],
+			],
+		),
+		Option('-k|--keyword', Args['keyword?', str]),
+	),
+	aliases={'多群B话榜', 'B话榜多群'},
+	use_cmd_start=True,
+	block=True,
+)
+
+MAX_COMPARE = 6
+
+
+@compare_cmd.handle()
+async def handle_compare(
+	bot: Bot,
+	groups: List[str],
+	type: Optional[str] = None,
+	keyword: Optional[str] = None,
+	session: Session = Depends(get_session),
+):
+	group_ids = [str(gid).strip() for gid in groups if str(gid).strip()]
+	if len(group_ids) < 2:
+		await compare_cmd.finish(
+			'至少给两个群号才有对比的意义吧，比如 /B话榜对比 123 456'
+		)
+	note = ''
+	if len(group_ids) > MAX_COMPARE:
+		group_ids = group_ids[:MAX_COMPARE]
+		note = f'\n（一次最多对比 {MAX_COMPARE} 个群，多的下次再发）'
+
+	period = type or '今日'
+	now = get_datetime_now_with_timezone()
+	time_range = resolve_period_range(period, now)
+	if time_range is None:
+		await compare_cmd.finish(f'不认识的时间类型：{period}')
+	start, stop = time_range
+
+	enabled = [gid for gid in group_ids if effective_config(gid).enabled]
+	if len(enabled) < 2:
+		await compare_cmd.finish(
+			'这些群里能查的不够两个，先把关了排行榜的群开了。'
+		)
+
+	cfg = effective_config(enabled[0])
+	# 群一多就少列几个人，不然图会长到没法看
+	top = min(cfg.get_num, max(3, 18 // len(enabled)))
+	try:
+		rows, image = await compare_report(
+			bot, enabled, period, start, stop, cfg, keyword, top
+		)
+	except RenderError as e:
+		logger.error(TROUBLESHOOTING)
+		await compare_cmd.finish(f'渲染失败：{e}')
+
+	summary = '\n'.join(f'{row["name"]}：{row["total"]} 条' for row in rows)
+	await (
+		saa.Image(image) + saa.Text(f'\n{period} · 多群对比{note}\n{summary}')
+	).finish(reply=True)
+
+
+# ---------------- 成员跨群 ----------------
+
+
+member_cmd = on_alconna(
+	Alconna(
+		'B话榜成员',
+		Args['at', [str, At], Field(completion=lambda: '请想查询的人的QQ号')],
+		Args[
+			'type?',
+			['今日', '昨日', '本周', '上周', '本月', '上月', '年度', '历史'],
+		],
+	),
+	aliases={'成员B话榜', '多群成员B话'},
+	use_cmd_start=True,
+	block=True,
+)
+
+
+@member_cmd.handle()
+async def handle_member(
+	bot: Bot,
+	at: Match[Union[str, At]],
+	type: Optional[str] = None,
+	session: Session = Depends(get_session),
+):
+	user_id = at.result
+	if isinstance(user_id, At):
+		user_id = user_id.target
+	if not user_id:
+		await member_cmd.finish('要 @ 一下或者给个 QQ 号。')
+
+	period = type or '历史'
+	start: Optional[datetime] = None
+	stop: Optional[datetime] = None
+	if period != '历史':
+		now = get_datetime_now_with_timezone()
+		time_range = resolve_period_range(period, now)
+		if time_range is None:
+			await member_cmd.finish(f'不认识的时间类型：{period}')
+		start, stop = time_range
+
+	cfg = effective_config(str(session.scene.id))
+	label = await user_display_name(str(user_id))
+	try:
+		rows, total, image = await member_report(
+			bot, str(user_id), label, period, start, stop, cfg
+		)
+	except RenderError as e:
+		logger.error(TROUBLESHOOTING)
+		await member_cmd.finish(f'渲染失败：{e}')
+
+	if not rows:
+		await member_cmd.finish(f'没有找到 {label} 的聊天记录。')
+
+	top = rows[0]
+	await (
+		saa.Image(image)
+		+ saa.Text(
+			f'\n{label} · {period} · 一共 {total} 条\n'
+			f'在「{top["label"]}」说得最多，{top["value"]} 条'
+		)
+	).finish(reply=True)

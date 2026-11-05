@@ -1,0 +1,37 @@
+/* 暗夜：霓虹描边 + 深色底（默认） */
+
+:root {
+	--bg: #1a1a1a;
+	--fg: #e0e0e0;
+	--muted: #a0a0a0;
+	--accent: #00ffff;
+	--card-bg: rgba(25, 25, 25, 0.9);
+	--panel-bg: rgba(30, 30, 30, 0.9);
+	--card-border: rgba(77, 228, 255, 0.8);
+	--card-glow: 0 0 15px rgba(0, 255, 255, 0.3);
+	--title-glow: 0 0 12px rgba(0, 255, 255, 0.45);
+	--avatar-border: rgba(100, 100, 100, 0.7);
+	--track: rgba(0, 0, 0, 0.31);
+	--bar-fill: linear-gradient(90deg, #0080ff, #ff00ae);
+	--radius: 1rem;
+	--medal-1-bg: gold;
+	--medal-1-fg: #9a690e;
+	--medal-2-bg: silver;
+	--medal-2-fg: #505050;
+	--medal-3-bg: #cd7f32;
+	--medal-3-fg: #5f340e;
+}
+
+body {
+	background-image:
+		radial-gradient(
+			circle at 15% 0%,
+			rgba(0, 128, 255, 0.2) 0%,
+			transparent 55%
+		),
+		radial-gradient(
+			circle at 85% 100%,
+			rgba(255, 0, 174, 0.16) 0%,
+			transparent 55%
+		);
+}

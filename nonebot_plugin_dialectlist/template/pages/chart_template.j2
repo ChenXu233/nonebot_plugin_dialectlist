@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="utf-8">
+		<title>{{ title }}</title>
+		<style>{{ inline_css|safe }}</style>
+	</head>
+	<body>
+		<div class="page">
+			<p class="page_title">{{ title }}</p>
+			<p class="page_sub">{{ subtitle }}</p>
+
+			<div class="panel">
+				{% if mode == 'bar' %}
+				<div class="bars">
+					{% for item in items %}
+					<div class="bar_col">
+						<span class="bar_value">{{ item.value }}</span>
+						<div class="bar" style="height: {{ item.height }}px"></div>
+						<span class="bar_label">{{ item.label }}</span>
+					</div>
+					{% endfor %}
+				</div>
+				{% else %}
+				<div class="hbars">
+					{% for item in items %}
+					<div class="hbar">
+						<span class="hbar_name">{{ item.label }}</span>
+						<div class="hbar_track">
+							<div
+								class="hbar_fill"
+								style="width: {{ item.percent }}%"
+							></div>
+						</div>
+						<span class="hbar_value">{{ item.value }}</span>
+					</div>
+					{% endfor %}
+				</div>
+				{% endif %}
+			</div>
+
+			<p class="foot">{{ footer }}</p>
+		</div>
+	</body>
+</html>

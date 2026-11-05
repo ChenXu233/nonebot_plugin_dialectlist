@@ -1,0 +1,118 @@
+/* 分布图 / 多群对比共用 */
+
+.page {
+	padding: 26px 36px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.page_title {
+	margin: 0;
+	font-size: 2.1rem;
+	font-weight: 900;
+	letter-spacing: 2px;
+	color: var(--accent);
+	text-shadow: var(--title-glow);
+}
+
+.page_sub {
+	margin: 0;
+	font-size: 1.05rem;
+	color: var(--muted);
+}
+
+.panel {
+	border: 2px solid var(--card-border);
+	border-radius: var(--radius);
+	background: var(--panel-bg);
+	box-shadow: var(--card-glow);
+	padding: 22px 26px;
+}
+
+.foot {
+	margin: 4px 0 0;
+	text-align: center;
+	font-size: 0.9rem;
+	color: var(--muted);
+}
+
+/* 柱状图：小时 / 星期 */
+
+.bars {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 5px;
+}
+
+.bar_col {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+
+.bar_value {
+	font-size: 0.8rem;
+	color: var(--muted);
+}
+
+.bar {
+	width: 100%;
+	border-radius: 6px 6px 0 0;
+	background: var(--bar-fill);
+}
+
+.bar_label {
+	font-size: 0.8rem;
+	color: var(--muted);
+	white-space: nowrap;
+}
+
+/* 条形图：群 / 人 横向对比 */
+
+.hbars {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.hbar {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.hbar_name {
+	width: 240px;
+	font-size: 1.05rem;
+	color: var(--fg);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.hbar_track {
+	flex: 1;
+	height: 22px;
+	border-radius: 999px;
+	background: var(--track);
+	overflow: hidden;
+}
+
+.hbar_fill {
+	height: 100%;
+	min-width: 4px;
+	border-radius: 999px;
+	background: var(--bar-fill);
+}
+
+.hbar_value {
+	width: 84px;
+	text-align: right;
+	font-size: 1rem;
+	color: var(--muted);
+}
+

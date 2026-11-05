@@ -1,0 +1,29 @@
+@font-face {
+	font-family: "text";
+	src: url("../res/HarmonyOS_Sans_SC.woff2") format("woff2");
+}
+
+:root {
+	--font: "text", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC",
+		sans-serif;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+}
+
+body {
+	background-color: var(--bg, #1a1a1a);
+	color: var(--fg, #e0e0e0);
+	font-family: var(--font);
+	background-size: cover;
+	background-attachment: fixed;
+	-webkit-font-smoothing: antialiased;
+}

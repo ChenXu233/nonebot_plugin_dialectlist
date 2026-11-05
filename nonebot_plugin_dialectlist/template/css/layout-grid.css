@@ -1,0 +1,68 @@
+/* 横排：卡片铺开，一屏看全榜 */
+
+.rank_container {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: stretch;
+}
+
+.rank_container > .rank_card {
+	width: calc(33.33% - 20px);
+	min-width: 260px;
+	flex-direction: column;
+	align-items: center;
+	margin: 10px;
+	padding-bottom: 14px;
+}
+
+.rank_container > .rank_card .rank:first-child {
+	order: 1;
+	margin-top: 12px;
+}
+
+.rank_container > .rank_card .avatar {
+	order: 2;
+}
+
+.rank_container > .rank_card .profile {
+	width: 92px;
+	height: 92px;
+	max-width: 92px;
+	max-height: 92px;
+	margin: 8px 0 12px;
+}
+
+.rank_container > .rank_card .rank_card_info {
+	order: 3;
+	align-items: center;
+	padding: 0 18px;
+}
+
+.rank_container > .rank_card .rank_card_info h1 {
+	font-size: 1.35rem;
+	text-align: center;
+	white-space: normal;
+}
+
+.rank_container > .rank_card .g-container {
+	width: 100%;
+	margin-top: 4px;
+}
+
+.rank_container > .rank_card .rank_card_info p {
+	text-align: center;
+}
+
+.rank_container > .rank_card .rank:last-child {
+	order: 4;
+}
+
+.rank_container > .rank_card .rank:last-child .rank_number {
+	margin: 10px 0 0;
+	min-width: 0;
+	height: auto;
+	font-size: 1.6rem;
+	background: none;
+	color: var(--accent);
+}

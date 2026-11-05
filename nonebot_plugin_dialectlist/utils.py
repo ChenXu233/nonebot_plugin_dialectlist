@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import inspect
 import os
 from typing import Any, Dict, List, Optional
@@ -41,6 +40,8 @@ except ImportError:  # pragma: no cover - 0.8 起已被移除
 
 from .config import plugin_config
 from .schema import UserRankInfo
+from .styles import get_theme, rank_css, read_css
+from .templates import PAGES_DIR, resolve as resolve_template
 
 # 0.8 的 render_template 用 variables/width/height，0.7 的签名仍是 request/**kwargs
 _NEW_RENDER_API = (
@@ -48,39 +49,6 @@ _NEW_RENDER_API = (
 	and 'variables' in inspect.signature(render_template).parameters
 )
 _VIEWPORT = {'viewport': {'width': 1000, 'height': 10}}
-_PLUGIN_TEMPLATE_DIR = os.path.dirname(os.path.abspath(__file__)) + '/template'
-_inline_css_cache: Dict[str, str] = {}
-
-
-def _build_inline_css(css_path: str) -> str:
-	"""读取样式表并把字体内联成 data URI，模板不再依赖本地文件"""
-	if css_path in _inline_css_cache:
-		return _inline_css_cache[css_path]
-
-	with open(css_path, encoding='utf-8') as f:
-		css = f.read()
-
-	font_path = os.path.join(
-		os.path.dirname(os.path.dirname(css_path)),
-		'res',
-		'HarmonyOS_Sans_SC.woff2',
-	)
-	if os.path.exists(font_path):
-		with open(font_path, 'rb') as f:
-			font = base64.b64encode(f.read()).decode('ascii')
-		css = css.replace(
-			'../res/HarmonyOS_Sans_SC.woff2', f'data:font/woff2;base64,{font}'
-		)
-
-	_inline_css_cache[css_path] = css
-	return css
-
-
-def _resolve_template_file(template_path: Optional[str] = None) -> str:
-	template_path = template_path or plugin_config.template_path
-	if template_path[:2] == './':
-		return os.path.dirname(os.path.abspath(__file__)) + template_path[1:]
-	return template_path
 
 
 class RenderError(RuntimeError):
@@ -103,7 +71,10 @@ def _describe_render_error(exc: Exception) -> str:
 
 
 async def _render_template_to_pic(
-	template_dir: str, template_name: str, context: Dict[str, Any]
+	template_dir: str,
+	template_name: str,
+	context: Dict[str, Any],
+	width: int = 1000,
 ) -> bytes:
 	"""渲染模板，兼容 htmlrender 0.6 / 0.7 与 0.8+ 两套接口"""
 	if _NEW_RENDER_API:
@@ -115,7 +86,7 @@ async def _render_template_to_pic(
 			html = environment.get_template(template_name).render(**context)
 			image = await render_html(  # type: ignore[misc]
 				html,
-				width=1000,
+				width=width,
 				height=None,
 				device_pixel_ratio=2,
 			)
@@ -186,24 +157,47 @@ def got_rank(
 	return rank
 
 
-async def get_rank_image(
-	rank: List[UserRankInfo], template_path: Optional[str] = None
+async def render_page(
+	template_name: str,
+	context: Dict[str, Any],
+	width: int = 1000,
 ) -> bytes:
-	path = _resolve_template_file(template_path)
-	path_dir, filename = os.path.split(path)
-
-	# 自定义模板目录里没有样式表时，退回插件自带的样式
-	css_path = os.path.join(path_dir, 'css', 'style.css')
-	if not os.path.exists(css_path):
-		css_path = os.path.join(_PLUGIN_TEMPLATE_DIR, 'css', 'style.css')
-
-	logger.debug(f'渲染排行榜模板: {path}')
+	"""渲染插件自带的其它模板（分布图 / 多群对比）"""
 	return await _render_template_to_pic(
-		path_dir,
+		str(PAGES_DIR), template_name, context, width
+	)
+
+
+def _rank_css_for(
+	path_dir: str, theme: Optional[str], layout: Optional[str]
+) -> str:
+	"""模板目录自带 style.css 就整套用它，否则套主题 + 模板的 extra.css"""
+	style_css = os.path.join(path_dir, 'css', 'style.css')
+	if os.path.isfile(style_css):
+		return read_css(style_css)
+	return rank_css(theme, layout, os.path.join(path_dir, 'extra.css'))
+
+
+async def get_rank_image(
+	rank: List[UserRankInfo],
+	template_path: Optional[str] = None,
+	theme: Optional[str] = None,
+	layout: Optional[str] = None,
+	template: Optional[str] = None,
+) -> bytes:
+	path_dir, filename = resolve_template(template, template_path)
+	path_dir_str = str(path_dir)
+
+	logger.debug(
+		f'渲染排行榜模板: {os.path.join(path_dir_str, filename)}'
+		f'（{get_theme(theme).name}）'
+	)
+	return await _render_template_to_pic(
+		path_dir_str,
 		filename,
 		{
 			'users': rank,
-			'inline_css': _build_inline_css(css_path),
+			'inline_css': _rank_css_for(path_dir_str, theme, layout),
 		},
 	)
 

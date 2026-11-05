@@ -1,0 +1,233 @@
+/* 榜单结构：位置、尺寸与配色无关 */
+
+.container {
+	padding: 20px 40px;
+	display: flex;
+	flex-direction: column;
+}
+
+.glow {
+	border: 2px solid var(--card-border);
+	box-shadow: var(--card-glow);
+}
+
+.card,
+.card2 {
+	text-align: center;
+	margin: 1%;
+	border-radius: var(--radius);
+	background: var(--card-bg);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+}
+
+.card {
+	padding: 4px 0;
+}
+
+.card2 {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 14px;
+	padding: 10px;
+}
+
+.center_text {
+	margin: 0.5em 0;
+	text-align: center;
+	font-size: 3rem;
+	font-weight: 900;
+	letter-spacing: 2px;
+	color: var(--accent);
+	text-shadow: var(--title-glow);
+}
+
+.center_text2 {
+	margin: 0;
+	text-align: center;
+	font-size: 1.4rem;
+	color: var(--muted);
+}
+
+.rank_container {
+	display: flex;
+	flex-direction: column;
+	border-radius: var(--radius);
+	padding: 10px;
+	margin: 1%;
+	background: var(--panel-bg);
+}
+
+.rank_card {
+	display: flex;
+	width: 100%;
+	flex-direction: row;
+	align-items: center;
+	margin: 10px;
+	border-radius: var(--radius);
+	background: var(--card-bg);
+}
+
+.rank_card_info {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	padding-right: 20px;
+}
+
+.rank_card_info h1 {
+	margin: 0 0 8px;
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--fg);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.rank_card_info p {
+	margin: 6px 0 0;
+	font-size: 1.1rem;
+	color: var(--muted);
+}
+
+.avatar {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.profile,
+.profile2 {
+	border: 2px solid var(--avatar-border);
+	border-radius: 50%;
+	object-fit: cover;
+	background-size: cover;
+}
+
+.profile {
+	width: 12vw;
+	height: 12vw;
+	max-width: 118px;
+	max-height: 118px;
+	margin-right: 20px;
+}
+
+.profile2 {
+	width: 42px;
+	height: 42px;
+	margin: 0;
+}
+
+.g-container {
+	width: 90%;
+	height: 18px;
+	border-radius: 999px;
+	background: var(--track);
+	overflow: hidden;
+}
+
+.g-progress {
+	height: 100%;
+	min-width: 4px;
+	border-radius: 999px;
+	background: var(--bar-fill);
+}
+
+.rank {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+.rank_number {
+	margin: 0 26px;
+	min-width: 48px;
+	height: 48px;
+	font-size: 1.5rem;
+	font-weight: 600;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: var(--muted);
+}
+
+.rank_number_1 {
+	border-radius: 999px;
+	background-color: var(--medal-1-bg);
+	color: var(--medal-1-fg);
+}
+
+.rank_number_2 {
+	border-radius: 999px;
+	background-color: var(--medal-2-bg);
+	color: var(--medal-2-fg);
+}
+
+.rank_number_3 {
+	border-radius: 999px;
+	background-color: var(--medal-3-bg);
+	color: var(--medal-3-fg);
+}
+
+/* 多群对比：一个群里一截，紧凑一点 */
+
+.compare_group {
+	margin: 1%;
+}
+
+.compare_head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	width: 100%;
+	padding: 4px 20px 0;
+}
+
+.compare_name {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--accent);
+}
+
+.compare_total {
+	font-size: 1rem;
+	color: var(--muted);
+}
+
+.compare_group .rank_number {
+	margin: 0 12px;
+	min-width: 30px;
+	height: 30px;
+	font-size: 0.95rem;
+}
+
+.compare_group .profile {
+	width: 44px;
+	height: 44px;
+	max-width: 44px;
+	max-height: 44px;
+	margin-right: 12px;
+}
+
+.compare_group .rank_card_info h1 {
+	font-size: 1.15rem;
+	margin-bottom: 4px;
+}
+
+.compare_group .rank_card_info p {
+	font-size: 0.85rem;
+	margin-top: 3px;
+}
+
+.compare_group .rank_card {
+	margin: 4px;
+	padding-right: 14px;
+}
+
+.compare_group .g-container {
+	height: 12px;
+}

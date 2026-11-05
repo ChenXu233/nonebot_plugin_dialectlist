@@ -26,7 +26,10 @@ class ScopedConfig(BaseModel):
 	aggregate_transmission: bool = False  # 是否聚合转发消息
 	timezone: Optional[str] = 'Asia/Shanghai'  # 时区，影响统计时间
 	string_suffix: str = '统计花费时间:{timecost}秒'  # 消息格式后缀
-	template_path: str = './template/rank_template.j2'  # 模板路径
+	template: str = 'classic'  # 用哪个模板（classic / podium / 自己加的）
+	template_path: str = ''  # 3.x 早期的直接指模板文件写法，留着兼容
+	theme: str = 'dark'  # 排行榜配色（暗夜/浅色/简约/暖阳）
+	layout: str = 'list'  # 榜单排版（竖排/横排）
 	string_format: str = (
 		'第{index}名：\n{nickname},{chatdatanum}条消息\n'  # 消息格式
 	)
