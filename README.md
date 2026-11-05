@@ -223,6 +223,23 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 
 3.5.0 起，外观拆成三层：**模板**（结构）+ **样式**（配色）+ **排版**。三者互相独立，换样式不用碰模板，换模板也不用改代码。
 
+### 效果
+
+同一套模板，只换样式：
+
+- **暗夜**（`dark`，默认）<br>
+  <img src="./docs/preview/rank-dark.png" width="360" alt="暗夜">
+- **浅色**（`light`）<br>
+  <img src="./docs/preview/rank-light.png" width="360" alt="浅色">
+- **简约**（`minimal`）<br>
+  <img src="./docs/preview/rank-minimal.png" width="360" alt="简约">
+- **暖阳**（`warm`）<br>
+  <img src="./docs/preview/rank-warm.png" width="360" alt="暖阳">
+- **横排**（`layout=grid`）<br>
+  <img src="./docs/preview/rank-light-grid.png" width="360" alt="横排">
+- **领奖台模板**（`template=podium`）<br>
+  <img src="./docs/preview/podium-dark.png" width="360" alt="领奖台">
+
 ### 样式和排版
 
 榜单、分布图、多群对比、成员跨群**共用同一套外壳**（标题卡 + 内容 + 页脚），所以换一次配色，所有图一起变，不会出现「榜单是暗色、分布图是白底」这种事。
@@ -362,6 +379,9 @@ DIALECTLIST__LAYOUT=grid
 /B话榜分布 今日 -k 女装   只看带关键词的消息
 ```
 
+- 按小时（`/B话榜分布`）<br>
+  <img src="./docs/preview/chart-hour.png" width="360" alt="时段分布">
+
 ### 多群对比
 
 ```text
@@ -369,6 +389,9 @@ DIALECTLIST__LAYOUT=grid
 /B话榜对比 123456 789012 111213 -t 本周
 /B话榜对比 123456 789012 -k 女装
 ```
+
+- 三个群一起对比（`/B话榜对比 111 222 333`）<br>
+  <img src="./docs/preview/compare.png" width="360" alt="多群对比">
 
 一次最多 6 个群；群一多会自动少列几个人，免得图长到没法看。
 
@@ -378,6 +401,9 @@ DIALECTLIST__LAYOUT=grid
 /B话榜成员 @某人
 /B话榜成员 12345678 本月
 ```
+
+- TA 在各群的发言量<br>
+  <img src="./docs/preview/member.png" width="360" alt="成员跨群">
 
 按群列 TA 说了多少，最后给总数。默认统计全部历史，加时间类型就是指定区间。
 
