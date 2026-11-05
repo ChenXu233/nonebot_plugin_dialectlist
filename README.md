@@ -26,6 +26,8 @@ nonebot-plugin-dialectlist
 
 \>💬**看看群友们这些天在群里水了多少话**💬<
 
+[📜 更新日志](./CHANGELOG/) · [🚀 Releases](https://github.com/ChenXu233/nonebot_plugin_dialectlist/releases)
+
 </div>
 
 ## 💿 安装
