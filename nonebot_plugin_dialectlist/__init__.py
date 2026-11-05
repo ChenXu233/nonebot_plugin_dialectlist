@@ -175,7 +175,17 @@ rank_cmd = on_alconna(
 		'B话榜',
 		Args[
 			'type?',
-			['今日', '昨日', '本周', '上周', '本月', '上月', '年度', '历史'],
+			[
+				'今日',
+				'昨日',
+				'本周',
+				'上周',
+				'本月',
+				'上月',
+				'年度',
+				'历史',
+				'帮助',
+			],
 		][
 			'time?',
 			str,
@@ -233,7 +243,7 @@ async def _group_message(
 	state['keyword'] = keyword
 	state['period'] = type
 
-	if not type:
+	if not type or type == '帮助':
 		await rank_cmd.finish(__plugin_meta__.usage)
 
 	dt = get_datetime_now_with_timezone()
@@ -661,6 +671,22 @@ async def handle_reload(
 	await reload_cmd.finish(
 		f'已重新读取 {len(store.all())} 个群的配置，定时任务已刷新。'
 	)
+
+
+# ---------------- 帮助 ----------------
+
+
+help_cmd = on_command(
+	'B话榜帮助',
+	aliases={'话痨榜帮助', '排行榜帮助', 'B话榜用法'},
+	block=True,
+	priority=5,
+)
+
+
+@help_cmd.handle()
+async def handle_help():
+	await help_cmd.finish(__plugin_meta__.usage)
 
 
 # ---------------- 样式 / 模板预览 ----------------

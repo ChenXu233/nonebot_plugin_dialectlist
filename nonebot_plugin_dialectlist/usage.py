@@ -3,6 +3,7 @@ from inspect import cleandoc
 __usage__ = cleandoc(
 	"""
 快速调用：
+/B话榜帮助 ————列出所有用法（发 /B话榜 帮助 也行）。
 /今日B话榜 ————看看今天群友发了多少消息。
 
 ### 🎨一般用法
