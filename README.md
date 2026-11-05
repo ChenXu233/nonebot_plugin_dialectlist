@@ -119,7 +119,7 @@ dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计�
 dialectlist__string_suffix: str = "统计花费时间：{timecost}秒"  # 消息格式后缀
 dialectlist__template: str = "classic"  # 榜单模板（classic / podium / 自建的）
 dialectlist__template_path: str = ""  # 老写法：直接指一个 .j2，填了就优先用它
-dialectlist__theme: str = "dark"  # 配色：dark / light / minimal / warm
+dialectlist__theme: str = "warm"  # 配色：warm（默认）/ dark / light / minimal
 dialectlist__layout: str = "list"  # 排版：list（竖排）/ grid（横排）
 dialectlist__font: str = "subset"  # 内置字体：subset（常用字，默认）/ full（全字库）/ system（系统字体）
 dialectlist__string_format: str = "第{index}名：\n{nickname},{chatdatanum}条消息\n"  # 消息格式
@@ -203,7 +203,7 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 | `开关` / `enabled` | 这个群是否允许查询和推送 |
 | `模板` / `template` | 该群用哪套模板，见 [样式与模板](#-样式与模板) |
 | `模板路径` / `template_path` | 直接指定模板文件的老写法 |
-| `样式` / `theme` | 配色：暗夜 / 浅色 / 简约 / 暖阳 |
+| `样式` / `theme` | 配色：暖阳（默认）/ 暗夜 / 浅色 / 简约 |
 | `布局` / `layout` | 排版：竖排 / 横排 |
 | `人数` / `get_num` | 榜单展示人数 |
 | `图片` / `visualization` | 是否输出排行榜图片 |
@@ -227,14 +227,14 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 
 同一套模板，只换样式：
 
-- **暗夜**（`dark`，默认）<br>
+- **暖阳**（`warm`，默认）<br>
+  <img src="./docs/preview/rank-warm.png" width="360" alt="暖阳">
+- **暗夜**（`dark`）<br>
   <img src="./docs/preview/rank-dark.png" width="360" alt="暗夜">
 - **浅色**（`light`）<br>
   <img src="./docs/preview/rank-light.png" width="360" alt="浅色">
 - **简约**（`minimal`）<br>
   <img src="./docs/preview/rank-minimal.png" width="360" alt="简约">
-- **暖阳**（`warm`）<br>
-  <img src="./docs/preview/rank-warm.png" width="360" alt="暖阳">
 - **横排**（`layout=grid`）<br>
   <img src="./docs/preview/rank-light-grid.png" width="360" alt="横排">
 - **领奖台模板**（`template=podium`）<br>
@@ -246,10 +246,10 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 
 | 样式 | id | 长什么样 |
 | :-- | :-- | :-- |
-| 暗夜 | `dark` | 霓虹描边 + 深色底，默认 |
+| 暖阳 | `warm` | 米色底 + 橙粉渐变，默认 |
+| 暗夜 | `dark` | 霓虹描边 + 深色底 |
 | 浅色 | `light` | 白底卡片，白天看不刺眼 |
 | 简约 | `minimal` | 纯黑白，去掉发光和圆角 |
-| 暖阳 | `warm` | 米色底 + 橙粉渐变 |
 
 排版两种：`list`（一人一行，默认）和 `grid`（卡片横着铺开）。
 
@@ -318,7 +318,7 @@ DIALECTLIST__LAYOUT=grid
 }
 ```
 
-**没写的部分一律回落到默认样式（暗夜）**：
+**没写的部分一律回落到默认样式（暖阳）**：
 
 - 只写 `base.css`，分布图和多群对比就按默认样式那套画，不会变成裸 HTML
 - 只写 `chart.css` 不写 `base.css`，变量也照默认来，只改图表那几行

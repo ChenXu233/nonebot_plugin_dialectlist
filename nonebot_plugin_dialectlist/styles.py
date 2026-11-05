@@ -31,7 +31,7 @@ CSS_DIR = TEMPLATE_DIR / 'css'
 THEMES_DIR = TEMPLATE_DIR / 'themes'
 LAYOUTS_DIR = TEMPLATE_DIR / 'layouts'
 
-DEFAULT_THEME = 'dark'
+DEFAULT_THEME = 'warm'
 DEFAULT_LAYOUT = 'list'
 
 # 一种图 = 一套结构 css + 样式目录里同名的额外 css

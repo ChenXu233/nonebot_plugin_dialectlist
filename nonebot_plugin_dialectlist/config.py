@@ -28,7 +28,7 @@ class ScopedConfig(BaseModel):
 	string_suffix: str = '统计花费时间:{timecost}秒'  # 消息格式后缀
 	template: str = 'classic'  # 用哪个模板（classic / podium / 自己加的）
 	template_path: str = ''  # 3.x 早期的直接指模板文件写法，留着兼容
-	theme: str = 'dark'  # 排行榜配色（暗夜/浅色/简约/暖阳）
+	theme: str = 'warm'  # 排行榜配色（暖阳/暗夜/浅色/简约），默认暖阳
 	layout: str = 'list'  # 榜单排版（竖排/横排）
 	font: str = (
 		'subset'  # 内置字体：subset（常用字，默认）/ full（全字库）/ system
