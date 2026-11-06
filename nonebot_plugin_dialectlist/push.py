@@ -10,16 +10,33 @@ from nonebot.log import logger
 from nonebot_plugin_apscheduler import scheduler
 
 from .config import PushGroupConfig, plugin_config
-from .group_config import all_push_groups, effective_config
+from .group_config import all_push_groups, effective_config, store
 from .time import get_datetime_now_with_timezone, resolve_period_range
 from .utils import (
 	RenderError,
 	format_rank_text,
+	get_previous_message_counts,
 	get_rank_image,
 	get_user_infos_from_db,
 	get_user_message_counts,
 	got_rank,
 )
+
+
+def _resolve_target(group_id: str) -> Optional[Any]:
+	"""优先用群配置里存下来的 SAA 目标（多平台），老配置回退到 QQ 群"""
+	payload = store.get(group_id).push_target
+	if payload:
+		try:
+			return saa.PlatformTarget.deserialize(payload)
+		except Exception as e:  # noqa: BLE001 - 目标格式变了也不能让推送炸掉
+			logger.warning(
+				f'[push] 群 {group_id} 的推送目标解析失败，回退到 QQ 群: {e}'
+			)
+	try:
+		return saa.TargetQQGroup(group_id=int(group_id))
+	except ValueError:
+		return None
 
 
 def _pick_bot(target: Any) -> Optional[Bot]:
@@ -71,10 +88,12 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 		return
 	start, stop = time_range
 
-	try:
-		target = saa.TargetQQGroup(group_id=int(group_id))
-	except ValueError:
-		logger.warning(f'[push] 群 {group_id} 不是 QQ 群号，暂不支持定时推送')
+	target = _resolve_target(group_id)
+	if target is None:
+		logger.warning(
+			f'[push] 群 {group_id} 没有可用的推送目标：'
+			'非 QQ 群请在本群发一次 /B话榜配置 推送 开'
+		)
 		return
 
 	bot = _pick_bot(target)
@@ -82,7 +101,10 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 		logger.warning(f'[push] 没有可用的 bot 能给群 {group_id} 发消息')
 		return
 
-	if not await _check_member_count(bot, group_id, cfg.min_members):
+	# 群人数只有 QQ 群拿得到；其他平台跳过这项检查
+	if isinstance(target, saa.TargetQQGroup) and not await _check_member_count(
+		bot, group_id, cfg.min_members
+	):
 		return
 
 	counts = await get_user_message_counts(
@@ -106,8 +128,17 @@ async def push_rank(group_id: str, cfg: PushGroupConfig) -> None:
 	rank = got_rank(dict(counts), cfg.get_num or group_cfg.get_num)
 	if not rank:
 		return
+	previous_counts = None
+	if group_cfg.show_delta:
+		previous_counts = await get_previous_message_counts(
+			period,
+			start,
+			stop,
+			[group_id],
+			exclude_user_ids=group_cfg.excluded_people,
+		)
 	# get_user_infos_from_db 要的是持久化 id，这里不能先换成平台号
-	rank2 = await get_user_infos_from_db(group_id, rank)
+	rank2 = await get_user_infos_from_db(group_id, rank, previous_counts)
 	text = format_rank_text(rank2, cfg=group_cfg)
 	msg = saa.Text(text) if text else None
 	if group_cfg.visualization:

@@ -17,7 +17,7 @@
 					<div class="podium_rank">{{ i.user_index }}</div>
 					<img class="podium_avatar" src="{{ i.user_avatar_data_uri }}"/>
 					<div class="podium_name">{{ i.user_nickname }} {{ i.user_gender }}</div>
-					<div class="podium_count">{{ i.user_bnum }} 条</div>
+					<div class="podium_count">{{ i.user_bnum }} 条{% if i.user_delta_label %} <span class="delta {{ i.user_delta_class }}">{{ i.user_delta_label }}</span>{% endif %}</div>
 					<div class="g-container podium_bar">
 						<div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
 					</div>
@@ -37,6 +37,9 @@
 					</div>
 					<div class="rank_card_info">
 						<h1>{{ i.user_nickname }} {{ i.user_gender }}</h1>
+						{% if i.user_delta_label %}
+						<span class="delta {{ i.user_delta_class }}">{{ i.user_delta_label }}</span>
+						{% endif %}
 						<div class="g-container">
 							<div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
 						</div>

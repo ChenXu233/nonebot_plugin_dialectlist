@@ -81,6 +81,7 @@ from .utils import (
 	get_user_infos,
 	got_rank,
 	persist_id2user_id,
+	get_previous_message_counts,
 	get_user_message_counts,
 )
 
@@ -274,6 +275,10 @@ async def _group_message(
 					await rank_cmd.finish(
 						'请输入正确的日期，不然我没法理解呢！'
 					)
+		else:
+			# 没给日期就是全部历史，别去问用户要日期
+			state['start'] = None
+			state['stop'] = None
 	else:
 		time_range = resolve_period_range(type, dt)
 		if time_range is None:
@@ -342,7 +347,8 @@ async def handle_rank(
 
 	rank = got_rank(raw_rank, cfg.get_num)
 	# 必须按 user_persist_id 精确映射，不能依赖查询返回顺序
-	id_map = await persist_id2user_id([item[0] for item in rank])
+	persist_ids = [item[0] for item in rank]
+	id_map = await persist_id2user_id(persist_ids)
 	for item in rank:
 		user_id = id_map.get(item[0])
 		if user_id is None:
@@ -352,7 +358,24 @@ async def handle_rank(
 		logger.debug(item)
 
 	t1 = t.time()
-	rank2 = await get_user_infos(bot, event, rank, cfg.use_user_info_cache)
+	previous_counts = None
+	if cfg.show_delta:
+		previous_counts = await get_previous_message_counts(
+			state.get('period'),
+			start,
+			stop,
+			[str(id)],
+			keyword=keyword,
+			exclude_user_ids=cfg.excluded_people,
+		)
+	rank2 = await get_user_infos(
+		bot,
+		event,
+		rank,
+		cfg.use_user_info_cache,
+		previous_counts,
+		persist_ids,
+	)
 	logger.debug(f'获取用户信息花费时间:{t.time() - t1}')
 
 	string = format_rank_text(rank2, keyword, cfg)
@@ -438,6 +461,8 @@ _CONFIG_KEYS: Dict[str, str] = {
 	'suffix': 'suffix',
 	'排除': 'excluded_people',
 	'excluded_people': 'excluded_people',
+	'环比': 'show_delta',
+	'show_delta': 'show_delta',
 	'推送': 'push_enabled',
 	'push_enabled': 'push_enabled',
 	'推送时间': 'push_cron',
@@ -459,6 +484,7 @@ _BOOL_KEYS = {
 	'visualization',
 	'show_text_rank',
 	'suffix',
+	'show_delta',
 	'push_enabled',
 }
 _INT_KEYS = {'get_num', 'push_min_messages', 'push_min_members', 'push_get_num'}
@@ -474,6 +500,7 @@ _CONFIG_DESC: Dict[str, str] = {
 	'show_text_rank': '是否输出文字榜单',
 	'suffix': '是否显示统计耗时',
 	'excluded_people': '统计时排除的 QQ 号，逗号分隔，清空 = 取消',
+	'show_delta': '榜单里显示和上一期比的名次变化（↑2 / ↓1 / 新）',
 	'push_enabled': '这个群是否定时推送',
 	'push_cron': '推送时间，5 段式 cron，如 0 8 * * *',
 	'push_period': '推送统计区间：今日/昨日/本周/上周/本月/上月/年度',
@@ -605,6 +632,7 @@ def _format_group_config(group_id: str) -> str:
 		('文字', on_off(cfg.show_text_rank), group.show_text_rank),
 		('后缀', on_off(cfg.suffix), group.suffix),
 		('排除', ','.join(cfg.excluded_people) or '无', group.excluded_people),
+		('环比', on_off(cfg.show_delta), group.show_delta),
 	]
 	if push_cfg is None:
 		rows.append(('推送', '关', group.push_enabled))
@@ -612,6 +640,14 @@ def _format_group_config(group_id: str) -> str:
 		period = push_cfg.period or plugin_config.push_period
 		cron = push_cfg.cron or plugin_config.push_cron
 		rows.append(('推送', f'开（{cron}，{period}）', group.push_enabled))
+	if group.push_target:
+		rows.append(
+			(
+				'推送目标',
+				str(group.push_target.get('platform_type') or '未知'),
+				group.push_target,
+			)
+		)
 
 	lines = [f'群 {group_id} 的配置：']
 	for name, value, override in rows:
@@ -622,6 +658,41 @@ def _format_group_config(group_id: str) -> str:
 	return '\n'.join(lines)
 
 
+def _remember_push_target(
+	event: Event, bot: Bot, group_id: str, force: bool = False
+) -> None:
+	"""把当前会话的 SAA 发送目标记到群配置里，定时推送才不限于 QQ 群"""
+	existing = store.get(group_id).push_target
+	if existing and not force:
+		return
+	if not force and resolve_push_config(group_id) is None:
+		# 没开推送的群不用记，等真的开了再存
+		return
+	try:
+		target = saa.get_target(event, bot)
+	except Exception as e:  # noqa: BLE001 - 平台没注册提取器很正常
+		logger.debug(f'[dialectlist] 取当前会话的推送目标失败: {e}')
+		return
+	if target is None:
+		return
+	try:
+		payload = (
+			target.model_dump(mode='json')
+			if hasattr(target, 'model_dump')
+			else target.dict()
+		)
+	except Exception as e:  # noqa: BLE001
+		logger.debug(f'[dialectlist] 序列化推送目标失败: {e}')
+		return
+	if payload == existing:
+		return
+	store.update(group_id, push_target=payload)
+	logger.info(
+		f'[dialectlist] 已记录群 {group_id} 的推送目标: '
+		f'{payload.get("platform_type")}'
+	)
+
+
 config_cmd = on_command(
 	'B话榜配置', aliases={'话痨榜配置', 'b话榜配置'}, block=True, priority=5
 )
@@ -630,6 +701,7 @@ config_cmd = on_command(
 @config_cmd.handle()
 async def handle_group_config(
 	event: Event,
+	bot: Bot,
 	args: Message = CommandArg(),
 	session: Session = Depends(get_session),
 ):
@@ -639,6 +711,8 @@ async def handle_group_config(
 		await config_cmd.finish('只有群主、管理员和 bot 主人能改配置。')
 
 	group_id = str(session.scene.id)
+	# 推送开着但还没存目标的老群，随便发一次配置命令就把目标补上
+	_remember_push_target(event, bot, group_id)
 	text = args.extract_plain_text().strip()
 
 	if not text or text in ('查看', '列表', 'list'):
@@ -667,6 +741,8 @@ async def handle_group_config(
 		await config_cmd.finish(f'{parts[0]} 的值不对：{e}')
 
 	store.update(group_id, **{key: value})
+	if key.startswith('push_'):
+		_remember_push_target(event, bot, group_id, force=True)
 	if key == 'enabled' or key.startswith('push_'):
 		register_push_jobs()
 	await config_cmd.finish(
@@ -725,7 +801,8 @@ async def _preview_image(
 ) -> Any:
 	"""拿今天的数据渲一张预览图，今天没消息就退回历史"""
 	now = get_datetime_now_with_timezone()
-	start, stop = resolve_period_range('今日', now) or (now, now)
+	period = '今日'
+	start, stop = resolve_period_range(period, now) or (now, now)
 	counts = await get_user_message_counts(
 		scene_ids=[session.scene.id],
 		types=['message'],
@@ -735,6 +812,8 @@ async def _preview_image(
 	)
 	if not counts:
 		# 今天还没人说话，就用历史数据凑一张，不然预览是白图
+		period = '历史'
+		start = stop = None
 		counts = await get_user_message_counts(
 			scene_ids=[session.scene.id],
 			types=['message'],
@@ -744,10 +823,27 @@ async def _preview_image(
 		return None
 
 	rank = got_rank(counts, cfg.get_num)
-	id_map = await persist_id2user_id([item[0] for item in rank])
+	persist_ids = [item[0] for item in rank]
+	id_map = await persist_id2user_id(persist_ids)
 	for item in rank:
 		item[0] = id_map.get(item[0], str(item[0]))
-	rank2 = await get_user_infos(bot, event, rank, cfg.use_user_info_cache)
+	previous_counts = None
+	if cfg.show_delta:
+		previous_counts = await get_previous_message_counts(
+			period,
+			start,
+			stop,
+			[session.scene.id],
+			exclude_user_ids=cfg.excluded_people,
+		)
+	rank2 = await get_user_infos(
+		bot,
+		event,
+		rank,
+		cfg.use_user_info_cache,
+		previous_counts,
+		persist_ids,
+	)
 	return await get_rank_image(rank2, template_path, theme, layout, template)
 
 

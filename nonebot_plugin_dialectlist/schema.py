@@ -1,5 +1,5 @@
 import base64
-from typing import Union
+from typing import Optional, Union
 
 from nonebot_plugin_userinfo import UserInfo
 
@@ -21,6 +21,11 @@ class UserRankInfo(UserInfo):
 	user_nickname: str
 	user_index: Union[int, str]
 	user_avatar_bytes: bytes
+	# 环比：和上一期相比的名次变化（正数上升、负数下降，None 表示没法比）
+	user_delta_rank: Optional[int] = None
+	user_prev_rank: Optional[int] = None
+	user_delta_label: str = ''
+	user_delta_class: str = ''
 
 	@property
 	def user_avatar_data_uri(self) -> str:

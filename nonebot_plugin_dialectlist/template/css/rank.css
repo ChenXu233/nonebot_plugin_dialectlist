@@ -111,3 +111,34 @@
 	background-color: var(--medal-3-bg);
 	color: var(--medal-3-fg);
 }
+
+/* 环比：和上一期比的名次变化 */
+.delta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	align-self: flex-start;
+	margin: 0 0 4px;
+	padding: 1px 10px;
+	border-radius: 999px;
+	font-size: 0.95rem;
+	font-weight: 700;
+	line-height: 1.5;
+	color: var(--delta-up-fg, #2f9e5f);
+	background: var(--delta-up-bg, rgba(47, 158, 95, 0.16));
+}
+
+.delta.down {
+	color: var(--delta-down-fg, #d1495b);
+	background: var(--delta-down-bg, rgba(209, 73, 91, 0.14));
+}
+
+.delta.new {
+	color: var(--delta-new-fg, var(--accent));
+	background: var(--delta-new-bg, rgba(255, 122, 69, 0.16));
+}
+
+.podium_count .delta {
+	margin: 0 0 0 6px;
+	font-size: 0.85rem;
+}

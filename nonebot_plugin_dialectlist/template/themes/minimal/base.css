@@ -22,6 +22,12 @@
 	--medal-2-fg: #ffffff;
 	--medal-3-bg: #9a9a9a;
 	--medal-3-fg: #ffffff;
+	--delta-up-fg: #111111;
+	--delta-up-bg: #eaeaea;
+	--delta-down-fg: #777777;
+	--delta-down-bg: #f2f2f2;
+	--delta-new-fg: #ffffff;
+	--delta-new-bg: #111111;
 }
 
 .center_text {

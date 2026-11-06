@@ -23,6 +23,7 @@ from .group_config import effective_config
 from .styles import chart_css, compare_css
 from .time import get_datetime_now_with_timezone
 from .utils import (
+	get_previous_message_counts,
 	get_user_infos_from_db,
 	get_user_message_counts,
 	got_rank,
@@ -286,7 +287,19 @@ async def compare_report(
 		if total:
 			# get_user_infos_from_db 要的是持久化 id，别提前换成平台号
 			rank = got_rank(dict(counts), limit)
-			users = await get_user_infos_from_db(group_id, rank)
+			previous_counts = None
+			if sub_cfg.show_delta:
+				previous_counts = await get_previous_message_counts(
+					period,
+					start,
+					stop,
+					[group_id],
+					keyword=keyword,
+					exclude_user_ids=sub_cfg.excluded_people,
+				)
+			users = await get_user_infos_from_db(
+				group_id, rank, previous_counts
+			)
 		groups.append({'name': names[group_id], 'total': total, 'users': users})
 
 	subtitle = f'{period} · 共 {len(groups)} 个群'

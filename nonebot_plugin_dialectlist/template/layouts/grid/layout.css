@@ -66,3 +66,7 @@
 	background: none;
 	color: var(--accent);
 }
+
+.rank_container > .rank_card .delta {
+	align-self: center;
+}

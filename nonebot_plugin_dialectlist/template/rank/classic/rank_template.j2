@@ -25,6 +25,9 @@
                     </div>
                     <div class="rank_card_info">
                         <h1>{{ i.user_nickname }} {{ i.user_gender }}</h1>
+                        {% if i.user_delta_label %}
+                        <span class="delta {{ i.user_delta_class }}">{{ i.user_delta_label }}</span>
+                        {% endif %}
                         <div class="g-container">
                             <div class="g-progress" style="width: {{ i.user_proportion }}%"></div>
                         </div>

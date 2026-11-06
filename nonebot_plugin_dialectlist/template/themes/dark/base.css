@@ -22,6 +22,10 @@
 	--medal-2-fg: #505050;
 	--medal-3-bg: #cd7f32;
 	--medal-3-fg: #5f340e;
+	--delta-up-fg: #4ade80;
+	--delta-up-bg: rgba(74, 222, 128, 0.16);
+	--delta-down-fg: #f87171;
+	--delta-down-bg: rgba(248, 113, 113, 0.16);
 }
 
 body {

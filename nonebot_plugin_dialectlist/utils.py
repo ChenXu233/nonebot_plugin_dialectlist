@@ -3,6 +3,7 @@ import base64
 import inspect
 import os
 import time
+from datetime import datetime
 from urllib.parse import unquote_to_bytes
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -45,6 +46,7 @@ from .config import plugin_config
 from .schema import UserRankInfo
 from .styles import get_theme, rank_css, read_css
 from .templates import PAGES_DIR, resolve as resolve_template
+from .time import previous_period_range
 
 # 0.8 的 render_template 用 variables/width/height，0.7 的签名仍是 request/**kwargs
 _NEW_RENDER_API = (
@@ -168,6 +170,55 @@ def got_rank(
 			break
 
 	return rank
+
+
+def previous_rank_map(previous_counts: Dict[int, int]) -> Dict[int, int]:
+	"""上一期每个用户的名次；并列的人算同一名（1,1,3……）"""
+	ordered = sorted(
+		previous_counts.items(), key=lambda item: item[1], reverse=True
+	)
+	ranks: Dict[int, int] = {}
+	last_count: Optional[int] = None
+	last_rank = 0
+	for position, (persist_id, count) in enumerate(ordered, start=1):
+		if count != last_count:
+			last_count = count
+			last_rank = position
+		ranks[persist_id] = last_rank
+	return ranks
+
+
+def delta_for_user(
+	index: int, persist_id: int, previous_ranks: Optional[Dict[int, int]]
+) -> Dict[str, Any]:
+	"""当前名次和上一期比：正数上升、负数下降，上期不在榜上算「新」"""
+	if previous_ranks is None:
+		return {
+			'user_delta_rank': None,
+			'user_prev_rank': None,
+			'user_delta_label': '',
+			'user_delta_class': '',
+		}
+	previous = previous_ranks.get(persist_id)
+	if previous is None:
+		return {
+			'user_delta_rank': None,
+			'user_prev_rank': None,
+			'user_delta_label': '新',
+			'user_delta_class': 'new',
+		}
+	delta = previous - index
+	label, css_class = '', ''
+	if delta > 0:
+		label, css_class = f'↑{delta}', 'up'
+	elif delta < 0:
+		label, css_class = f'↓{-delta}', 'down'
+	return {
+		'user_delta_rank': delta,
+		'user_prev_rank': previous,
+		'user_delta_label': label,
+		'user_delta_class': css_class,
+	}
 
 
 async def render_page(
@@ -426,10 +477,19 @@ async def _load_avatars(
 
 
 async def _build_rank_infos(
-	rank: List, user_infos: List[Optional[UserInfo]]
+	rank: List,
+	user_infos: List[Optional[UserInfo]],
+	previous_counts: Optional[Dict[int, int]] = None,
+	persist_ids: Optional[List[int]] = None,
 ) -> List[UserRankInfo]:
-	"""把 (user_persist_id, 消息数) 和用户信息拼成渲染用的结构"""
+	"""把 (user_persist_id, 消息数) 和用户信息拼成渲染用的结构
+
+	previous_counts 是上一期的全量计数，传了才会算名次变化。
+	"""
 	user_avatars = await _load_avatars(user_infos)
+	previous_ranks = (
+		previous_rank_map(previous_counts) if previous_counts else None
+	)
 
 	total = sum(item[1] for item in rank) or 1
 	rank2 = []
@@ -442,6 +502,11 @@ async def _build_rank_infos(
 			user_index=i + 1,
 			user_nickname=_get_user_nickname(user_info),
 			user_avatar_bytes=user_avatars[i],
+			**delta_for_user(
+				i + 1,
+				persist_ids[i] if persist_ids else rank[i][0],
+				previous_ranks,
+			),
 		)
 		if user.user_gender == 'male':
 			user.user_gender = '♂'
@@ -459,13 +524,21 @@ async def get_user_infos(
 	event: Event,
 	rank: List,
 	use_cache: bool = plugin_config.use_user_info_cache,
+	previous_counts: Optional[Dict[int, int]] = None,
+	persist_ids: Optional[List[int]] = None,
 ) -> List[UserRankInfo]:
-	"""事件响应里用：走 userinfo 拿实时信息"""
+	"""事件响应里用：走 userinfo 拿实时信息
+
+	rank 里的用户 id 会被换成平台号，算环比时用 persist_ids 记住原来的
+	持久化 id（顺序和 rank 一致）。
+	"""
 	user_ids = [str(item[0]) for item in rank]
 	user_infos = await asyncio.gather(
 		*[get_user_info(bot, event, user_id, use_cache) for user_id in user_ids]
 	)
-	return await _build_rank_infos(rank, list(user_infos))
+	return await _build_rank_infos(
+		rank, list(user_infos), previous_counts, persist_ids
+	)
 
 
 def _user_info_from_db(
@@ -483,7 +556,9 @@ def _user_info_from_db(
 
 
 async def get_user_infos_from_db(
-	scene_id: str, rank: List
+	scene_id: str,
+	rank: List,
+	previous_counts: Optional[Dict[int, int]] = None,
 ) -> List[UserRankInfo]:
 	"""定时推送用：没有事件上下文，直接从 uninfo 的缓存里取用户信息"""
 	persist_ids = [item[0] for item in rank]
@@ -526,7 +601,7 @@ async def get_user_infos_from_db(
 			)
 		)
 
-	return await _build_rank_infos(rank, user_infos)
+	return await _build_rank_infos(rank, user_infos, previous_counts)
 
 
 def format_rank_text(
@@ -544,6 +619,7 @@ def format_rank_text(
 			index=item.user_index,
 			nickname=item.user_nickname,
 			chatdatanum=item.user_bnum,
+			delta=item.user_delta_label,
 		)
 		for item in rank
 	)
@@ -590,3 +666,25 @@ async def get_user_message_counts(
 		result = await db_session.execute(statement)
 		# 转换为字典格式返回
 		return {user_id: count for user_id, count in result.all()}
+
+
+async def get_previous_message_counts(
+	period: Optional[str],
+	start: Optional[datetime],
+	stop: Optional[datetime],
+	scene_ids: List[str],
+	keyword: Optional[str] = None,
+	exclude_user_ids: Optional[List[str]] = None,
+) -> Optional[Dict[int, int]]:
+	"""环比要用的上一期全量计数；没有可比的上一期就返回 None"""
+	previous = previous_period_range(period, start, stop)
+	if previous is None:
+		return None
+	return await get_user_message_counts(
+		keyword=keyword,
+		scene_ids=scene_ids,
+		types=['message'],
+		time_start=previous[0],
+		time_stop=previous[1],
+		exclude_user_ids=exclude_user_ids or [],
+	)

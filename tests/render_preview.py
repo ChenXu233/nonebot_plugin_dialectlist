@@ -49,10 +49,24 @@ def avatar(color):
 	return buffer.getvalue()
 
 
-def make_rank():
+DELTAS = [
+	('↑2', 'up'),
+	('新', 'new'),
+	('↓1', 'down'),
+	('', ''),
+	('↑4', 'up'),
+	('', ''),
+]
+
+
+def make_rank(deltas=None):
 	total = sum(COUNTS)
 	rank = []
 	for index, (name, count) in enumerate(zip(NAMES, COUNTS), start=1):
+		extra = {}
+		if deltas:
+			label, css_class = deltas[index - 1]
+			extra = {'user_delta_label': label, 'user_delta_class': css_class}
 		rank.append(
 			UserRankInfo(
 				user_id=str(10000 + index),
@@ -63,6 +77,7 @@ def make_rank():
 				user_index=index,
 				user_gender=['♂', '♀', '🤔'][index % 3],
 				user_avatar_bytes=avatar(COLORS[index - 1]),
+				**extra,
 			)
 		)
 	return rank
@@ -84,6 +99,13 @@ async def main():
 	await save('rank-light-grid', get_rank_image(rank, None, 'light', 'grid', 'classic'))
 	await save('podium-dark', get_rank_image(rank, None, 'dark', 'list', 'podium'))
 	await save('podium-warm', get_rank_image(rank, None, 'warm', 'list', 'podium'))
+
+	delta_rank = make_rank(DELTAS)
+	await save('delta-warm', get_rank_image(delta_rank, None, 'warm', 'list', 'classic'))
+	await save('delta-dark', get_rank_image(delta_rank, None, 'dark', 'list', 'classic'))
+	await save('delta-grid', get_rank_image(delta_rank, None, 'light', 'grid', 'classic'))
+	await save('delta-minimal', get_rank_image(delta_rank, None, 'minimal', 'list', 'classic'))
+	await save('delta-podium', get_rank_image(delta_rank, None, 'warm', 'list', 'podium'))
 
 	hours = [40, 18, 9, 5, 3, 2, 8, 60, 210, 380, 420, 460,
 			520, 610, 700, 660, 640, 720, 880, 1020, 1140, 980, 620, 300]
@@ -135,11 +157,17 @@ async def main():
 		('猫猫图鉴', 0.5),
 	):
 		users = [
-			item.model_copy(update={
-				'user_index': index,
-				'user_bnum': int(item.user_bnum * factor),
-				'user_proportion': round(item.user_proportion * factor, 2),
-			})
+			item.model_copy(
+				update={
+					'user_index': index,
+					'user_bnum': int(item.user_bnum * factor),
+					'user_proportion': round(
+						item.user_proportion * factor, 2
+					),
+					'user_delta_label': DELTAS[index - 1][0],
+					'user_delta_class': DELTAS[index - 1][1],
+				}
+			)
 			for index, item in enumerate(rank, start=1)
 		]
 		groups.append({

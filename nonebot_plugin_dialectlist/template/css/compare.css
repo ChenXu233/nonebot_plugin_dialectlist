@@ -56,3 +56,11 @@
 .compare_group .g-container {
 	height: 12px;
 }
+
+/* 环比徽章在紧凑行里再小一号 */
+.compare_group .delta {
+	margin: 0 0 2px;
+	padding: 0 8px;
+	font-size: 0.75rem;
+	line-height: 1.6;
+}

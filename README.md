@@ -113,6 +113,7 @@ dialectlist__suffix: bool = True  # 是否显示后缀
 dialectlist__visualization: bool = True  # 是否可视化
 dialectlist__show_text_rank: bool = True  # 是否显示文本排名
 dialectlist__excluded_people: List[str] = []  # 排除的人的 QQ 号
+dialectlist__show_delta: bool = True  # 榜单是否显示和上一期比的名次变化
 dialectlist__use_user_info_cache: bool = True  # 是否使用用户信息缓存（10 秒 TTL）
 dialectlist__aggregate_transmission: bool = False  # 是否聚合转发消息
 dialectlist__timezone: Optional[str] = "Asia/Shanghai"  # 时区，影响统计时间
@@ -166,8 +167,8 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 
 几个注意点：
 
-- 目前只支持 QQ 群（群号必须是数字），其他平台会跳过并打日志
-- `min_members` 依赖适配器的 `get_group_info`，拿不到群信息时会跳过这项检查而不是不推
+- 推送目标不再写死 QQ 群：在哪个平台发一次 `/B话榜配置 推送 开`，插件就记住这个群能用的发送目标（存在 `groups.json` 的 `push_target` 里），之后的定时推送照发；`.env` 里的 `push_groups` 没有会话上下文，仍然只按 QQ 群号处理
+- `min_members` 依赖适配器的 `get_group_info`，目前只有 QQ 群会检查；其他平台拿不到群信息时跳过这项检查而不是不推
 - 推送用的是 uninfo 缓存的昵称和头像，不会在半夜刷接口
 - 时间按 `dialectlist__timezone` 解释
 
@@ -210,6 +211,7 @@ DIALECTLIST__PUSH_GROUPS={"123456789": {}, "987654321": {"cron": "0 8 * * *", "m
 | `文字` / `show_text_rank` | 是否输出文字榜单 |
 | `后缀` / `suffix` | 是否显示统计耗时 |
 | `排除` / `excluded_people` | 统计时排除的 QQ 号，逗号分隔，`清空` 表示取消 |
+| `环比` / `show_delta` | 榜单里是否显示 `↑2` / `↓1` / `新` 的名次变化 |
 | `推送` / `push_enabled` | 这个群是否定时推送 |
 | `推送时间` / `push_cron` | 推送用的 5 段式 cron |
 | `推送区间` / `push_period` | 推送统计区间 |
@@ -315,6 +317,10 @@ DIALECTLIST__LAYOUT=grid
     --medal-2-fg: #505050;
     --medal-3-bg: #cd7f32;
     --medal-3-fg: #5f340e;
+    --delta-up-fg: #2f9e5f;
+    --delta-up-bg: rgba(47, 158, 95, 0.16);
+    --delta-down-fg: #d1495b;
+    --delta-down-bg: rgba(209, 73, 91, 0.14);
 }
 ```
 
@@ -368,7 +374,25 @@ DIALECTLIST__LAYOUT=grid
 
 ## 📊 更多查询
 
-除了「某个群某个时间段的榜单」，还能这么查（都是 3.5.0 加的）：
+除了「某个群某个时间段的榜单」，还能这么查：
+
+### 名次变化（环比）
+
+榜单里每个人名字下面会多一个小标签：
+
+- `↑2` ———— 比上一期升了 2 名
+- `↓1` ———— 比上一期掉了 1 名
+- `新` ———— 上一期不在榜上（没说话或者没进前 N）
+
+![环比](./docs/preview/delta.png)
+
+「上一期」跟着查询区间走：今日对比昨天同一时段，昨日对比前天，本周 / 上周往前挪一周，
+本月 / 上月对比上个月的同一天，年度对比去年的同一天；`/B话榜 历史 2025-01-01~2025-01-07`
+这种自定义区间按同样长度往前挪一段。没法比的查询（比如不带日期的全量历史）不会有标签。
+
+定时推送和多群对比的榜单也带这个标签；不想要就 `/B话榜配置 环比 关`，或者在 `.env` 里设
+`dialectlist__show_delta=false`。文字榜单默认不带标签，想带就在 `dialectlist__string_format`
+里加一个 `{delta}`。
 
 ### 分布图
 

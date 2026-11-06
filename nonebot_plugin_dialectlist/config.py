@@ -22,6 +22,7 @@ class ScopedConfig(BaseModel):
 	visualization: bool = True  # 是否可视化
 	show_text_rank: bool = True  # 是否显示文本排名
 	excluded_people: List[str] = []  # 排除的人的QQ号
+	show_delta: bool = True  # 榜单是否显示和上一期比的名次变化
 	use_user_info_cache: bool = True  # 是否使用用户信息缓存（10 秒 TTL）
 	aggregate_transmission: bool = False  # 是否聚合转发消息
 	timezone: Optional[str] = 'Asia/Shanghai'  # 时区，影响统计时间

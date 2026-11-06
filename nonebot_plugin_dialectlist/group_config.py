@@ -25,6 +25,8 @@ class GroupConfig(BaseModel):
 	show_text_rank: Optional[bool] = None
 	suffix: Optional[bool] = None
 	excluded_people: Optional[List[str]] = None
+	show_delta: Optional[bool] = None
+	push_target: Optional[Dict[str, Any]] = None  # 定时推送的 SAA 目标（多平台）
 
 	push_enabled: Optional[bool] = None
 	push_cron: Optional[str] = None
@@ -46,6 +48,7 @@ OVERRIDE_KEYS = (
 	'show_text_rank',
 	'suffix',
 	'excluded_people',
+	'show_delta',
 )
 
 
